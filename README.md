@@ -1,4 +1,4 @@
-#LemonSolver
+LemonSolver
 
 Thesis's project for bachelor's degree at University of Pisa
 
