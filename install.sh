@@ -8,7 +8,7 @@ cmake -DLEMON_ENABLE_GLPK=NO -DLEMON_ENABLE_COIN=NO -DLEMON_ENABLE_ILOG=NO ..
 make
 #make check
 
-#cp libemon & config.h to /LemonSolver/lib & /LemonSolver/include
+#COPY all files .h and .a to LemonSolver
 cd ../..
 
 mkdir -p lib
@@ -18,7 +18,7 @@ mkdir -p include/lemon/bits
 mkdir -p include/lemon/concepts
 
 cp lemon-development/build/lemon/libemon.a lib
-cp lemon-development/build/lemon/config.h include
+cp lemon-development/build/lemon/config.h include/lemon
 
 
 cp lemon-development/lemon/*.h include/lemon
