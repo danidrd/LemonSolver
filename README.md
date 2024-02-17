@@ -1,20 +1,20 @@
 
-Thesis's project for bachelor's degree at University of Pisa
+<b>Thesis's project for my bachelor's degree at University of Pisa</b>
 
-A C++ interface between SMS++ library and Lemon library for solving
+A C++ interface between the SMS++ library and the Lemon library for solving
 block-structured MinCostFlow problems.
 
-lemon-development's folder contains a copy of the development branch made on 07/29/2020 by Lemon; since there is no git repository, in case of newer versions, the versioning update has to be done manually.
+The lemon-development folder contains a copy of the development branch made on 07/29/2020 by Lemon; since there is no git repository for that, in case of newer versions, you'll have to manually update it.
 
-INSTALL SECTION
+<b>INSTALL SECTION</b>
 
-The install.sh bash script allow users to create/insert /include and /lib folders.
-include's folder contains a copy of /lemon-development/lemon sub-folder in which there are stored header files.
-lib's folder contains a copy of libemon.a file, obtained from /lemon-development/build folder.
+The install.sh bash script allow users to create or insert into the /include and /lib folders.
+The include folder contains a copy of the /lemon-development/lemon sub-folder in which header files are stored.
+The lib folder contains a copy of the libemon.a file, obtained from the /lemon-development/build folder.
 
-In order to run this script, it is mandatory to have in your system:
+In order to run this script, you need the following dependencies installed:
 
--CMake;
--Make;
--Clang;
+-CMake;  
+-Make;  
+-Clang;  
 -g++
