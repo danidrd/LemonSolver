@@ -37,6 +37,14 @@
 
 #include "MCFSolver.h"
 
+#include "capacity_scaling.h"
+
+#include "cost_scaling.h"
+
+#include "cycle_canceling.h"
+
+#include "network_simplex.h"
+
 #ifdef HAVE_CSCL2
  #include "CS2.h"
 #endif

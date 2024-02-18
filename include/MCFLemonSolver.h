@@ -34,6 +34,8 @@
 
 #include "MCFClass.h"
 
+
+
 /*--------------------------------------------------------------------------*/
 /*-------------------------- NAMESPACE & USING -----------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -67,7 +69,7 @@ namespace SMSpp_di_unipi_it
  * template over the underlying :MCFClass object, which implies that most of
  * the code is in the header file. */
 
-template< typename MCFC, typename Algorithm, typename GR, typename F, typename C, typename TR >
+template< typename Algo, typename GR, typename GR, typename V, typename C>
 class MCFLemonSolver : public CDASolver , private MCFC {
 
 /*--------------------------------------------------------------------------*/
@@ -118,12 +120,11 @@ public:
  kLowPrecision = kError + 1   a solution found but not provably optimal
  */
 //New Add
-Algorithm AL;
-TR::Digraph Digraph;
-TR::Value Value;
-TR::Cost Costs;
-typedef typename TR::Heap Heap;
-typedef TR Traits;
+Algorithm::TR::Digraph Digraph;
+Algorithm::TR::Value Value;
+Algorithm::TR::Cost Costs;
+typedef typename Algorithm::TR::Heap Heap;
+typedef Algorithm::TR Traits;
 /*--------------------------------------------------------------------------*/
 
  /*
@@ -341,7 +342,6 @@ typedef TR Traits;
  *  @{ */
 
  /// (try to) solve the MCF encoded in the MCFBlock
-template<typename Algorithm, typename G, typename F, typename C, typename TR>
  int compute( Algorithm AL, bool changedvars = true ) override
  {
   const static std::array< int , 6 > MCFstatus_2_sol_type = {
