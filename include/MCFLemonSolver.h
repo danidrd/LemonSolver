@@ -120,11 +120,11 @@ public:
  kLowPrecision = kError + 1   a solution found but not provably optimal
  */
 //New Add
-Algorithm::TR::Digraph Digraph;
-Algorithm::TR::Value Value;
-Algorithm::TR::Cost Costs;
-typedef typename Algorithm::TR::Heap Heap;
-typedef Algorithm::TR Traits;
+TR::Digraph Digraph;
+TR::Value Value;
+TR::Cost Costs;
+typedef typename TR::Heap Heap;
+typedef TR Traits;
 /*--------------------------------------------------------------------------*/
 
  /*
