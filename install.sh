@@ -20,6 +20,8 @@ git clone https://gitlab.com/libeigen/eigen.git
 wget https://downloads.unidata.ucar.edu/netcdf-c/4.9.2/netcdf-c-4.9.2.tar.gz
 tar -xvzf netcdf-c-4.9.2.tar.gz
 rm netcdf-c-4.9.2.tar.gz
+
+git clone https://github.com/frangio68/Min-Cost-Flow-Class.git
 #COPY all files .h and .a to LemonSolver
 
 mkdir -p lib
