@@ -10,7 +10,7 @@ make
 
 
 cd ../..
-#DOWNLOAD boost, netCDF, eigen
+#DOWNLOAD boost, netCDF, eigen, bundlesolver, langragiandualsolver, milpsolver, 
 wget https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.gz
 tar -xvzf boost_1_84_0.tar.gz
 rm boost_1_84_0.tar.gz
@@ -22,6 +22,20 @@ tar -xvzf netcdf-c-4.9.2.tar.gz
 rm netcdf-c-4.9.2.tar.gz
 
 git clone https://github.com/frangio68/Min-Cost-Flow-Class.git
+
+git clone https://gitlab.com/smspp/bundlesolver.git
+
+git clone https://gitlab.com/smspp/lagrangiandualsolver.git
+
+git clone https://gitlab.com/smspp/milpsolver.git
+
+git clone https://gitlab.com/smspp/tests.git
+
+git clone https://gitlab.com/smspp/mcfblock.git
+
+git clone https://gitlab.com/smspp/mmcfblock.git
+
+git clone https://gitlab.com/smspp/smspp.git
 #COPY all files .h and .a to LemonSolver
 
 mkdir -p lib
