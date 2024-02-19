@@ -8,7 +8,7 @@ The lemon-development folder contains a copy of the development branch made on 0
 
 ## INSTALL SECTION 
 
-The install.sh bash script allow users to create or insert into the /include and /lib folders.
+The install.sh bash script allow users to create or insert into the /include and /lib folders and to download dependencies of SMS++.
 The include folder contains a copy of the /lemon-development/lemon sub-folder in which header files are stored.
 The lib folder contains a copy of the libemon.a file, obtained from the /lemon-development/build folder.
 
@@ -18,4 +18,5 @@ In order to run this script, you need the following dependencies installed:
 - Make   
 - Clang    
 - g++
+  
   
