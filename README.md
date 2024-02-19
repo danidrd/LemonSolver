@@ -14,11 +14,8 @@ The lib folder contains a copy of the libemon.a file, obtained from the /lemon-d
 
 In order to run this script, you need the following dependencies installed:
 
-- CMake;
-   
-- Make;
-    
-- Clang;
-    
+- CMake   
+- Make   
+- Clang    
 - g++
   
