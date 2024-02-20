@@ -1,3 +1,4 @@
 include/lemon/*
 lemon-development/build/*
 lib/*
+.vscode/
