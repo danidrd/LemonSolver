@@ -39,6 +39,15 @@
 /// namespace for the Structured Modeling System++ (SMS++)
 namespace SMSpp_di_unipi_it
 {
+  template < typename GR, typename V, typename C >
+  using SMSppCapacityScaling< GR, V, C > =
+   CapacityScaling< GR, V, C, 
+   CapacityScalingDefaultTraits< GR, V, C > >;
+  
+  template < typename GR, typename V, typename C >
+  using SMSppCostScaling< GR, V, C > =
+   CostScaling< GR, V, C, 
+   CostScalingDefaultTraits< GR, V, C > >;
   using namespace MCFClass_di_unipi_it;
 
   class MCFSolverState; // forward declaration of MCFSolverState
@@ -50,15 +59,16 @@ namespace SMSpp_di_unipi_it
   *  @{ */
 
   /*--------------------------------------------------------------------------*/
-  /*-------------------------- CLASS MCFSolver -------------------------------*/
+  /*-------------------------- CLASS MCFLemonSolver -------------------------------*/
   /*--------------------------------------------------------------------------*/
   /*--------------------------- GENERAL NOTES --------------------------------*/
   /*--------------------------------------------------------------------------*/
   /// CDASolver for MCFBlock
-  /** The MCFSolver implements the Solver interface for Min-Cost Flow problems
-  * described by a MCFBlock. Because the linear MCF problem is a Linear Program
-  * it has a(n exact) dual, and therefore MCFSolver implements the CDASolver
-  * interface for also giving out dual information.
+  /** The MCFLemonSolver implements Algo interface that allow MCFLemonSolver to use
+  * methods from any MCF algorithms of Lemon library.
+  * Because the linear MCF problem is a Linear Program it has a(n exact) dual,
+  * and therefore MCFLemonSolver implements the CDASolver interface for also
+  * giving out dual information.
   *
   * This is only a relatively thin wrapper class around solvers under the
   * MCFClass interface. To avoid a pointer to an internal object, the class is
@@ -66,7 +76,7 @@ namespace SMSpp_di_unipi_it
   * the code is in the header file. */
 
   template <typename Algo, typename GR, typename V, typename C>
-  class MCFLemonSolver : public CDASolver, private MCFClass<Algo, GR, V, C>
+  class MCFLemonSolver : public CDASolver, private Algo< GR, V, C >
   {
 
    /*--------------------------------------------------------------------------*/
@@ -126,8 +136,8 @@ namespace SMSpp_di_unipi_it
   /*--------------------------- GENERAL NOTES --------------------------------*/
   /*--------------------------------------------------------------------------*/
   /// CDASolver for MCFBlock
-  /** The MCFSolver implements the Solver interface for Min-Cost Flow problems
-   * described by a MCFBlock. Because the linear MCF problem is a Linear Program
+  /** The MCFLemonSolver implements the Algo interface for Min-Cost Flow problems
+   * described by Lemon. Because the linear MCF problem is a Linear Program
    * it has a(n exact) dual, and therefore MCFSolver implements the CDASolver
    * interface for also giving out dual information.
    *
@@ -136,8 +146,13 @@ namespace SMSpp_di_unipi_it
    * template over the underlying :MCFClass object, which implies that most of
    * the code is in the header file. */
 
-  template <typename Algo, typename GR, typename GR, typename V, typename C>
-  class MCFLemonSolver : public CDASolver, private MCFC
+  template <typename Algo, typename GR, typename V, typename C>
+  class MCFLemonSolver : public CDASolver, private Algo< GR, V, C >
+  {
+
+    /*--------------------------------------------------------------------------*/
+    /*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
+    /*--------------------------------------------------------------------------*/
   {
 
     /*--------------------------------------------------------------------------*/
@@ -276,8 +291,10 @@ namespace SMSpp_di_unipi_it
     /// constructor: does nothing special
     /** Void constructor: does nothing special, except verifying that the
      * template argument derives from MCFClass. */
-
-    MCFLemonSolver(void) : CDASolver(), MCFC()
+    //TODO : Add a static_assert to check if Algo is derived from the right class(WHICH CLASS?).
+    //TODO : Add a static_assert to check if GR, V and C are the right types.
+    //TODO : Add a control to ensure that GR is a supported graph type for MCFBlock.
+    MCFLemonSolver(void) : CDASolver(), Algo()
     {
       static_assert(std::is_base_of<MCFClass, MCFC>::value,
                     "MCFLemonSolver: MCFC must inherit from MCFClass");
@@ -417,7 +434,7 @@ namespace SMSpp_di_unipi_it
      *  @{ */
 
     /// (try to) solve the MCF encoded in the MCFBlock
-    int compute(Algorithm AL, bool changedvars = true) override
+    int compute( bool changedvars = true ) override
     {
       const static std::array<int, 6> MCFstatus_2_sol_type = {
           kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
@@ -433,6 +450,7 @@ namespace SMSpp_di_unipi_it
         return (kBlockLocked);                 // return error on failure
 
       // while [read_]locked, process any outstanding Modification
+      //TODO: ensure that modification are actually processed for MCFLemonSolver.
       process_outstanding_Modification();
 
       if (!f_dmx_file.empty())
@@ -450,9 +468,12 @@ namespace SMSpp_di_unipi_it
         f_Block->read_unlock(); // read_unlock it
 
       // ensure the timer exists (or reset it)
+      //TODO: change MCFC function to Algo function.
       this->MCFC::SetMCFTime();
 
       // then (try to) solve the MCF
+      //TODO: change MCFC function to Algo function.
+      //Probably running the method run of the Algo class.
       this->MCFC::SolveMCF();
 
       unlock(); // release self-lock
@@ -460,6 +481,7 @@ namespace SMSpp_di_unipi_it
       // now give out the result: note that the vector MCFstatus_2_sol_type[]
       // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
       // hence the returned status has to be shifted by + 1
+      //TODO: change MCFC function to Algo function.
       return (MCFstatus_2_sol_type[this->MCFC::MCFGetStatus() + 1]);
     }
 
@@ -468,22 +490,24 @@ namespace SMSpp_di_unipi_it
     /*--------------------------------------------------------------------------*/
     /** @name Accessing the found solutions (if any)
      *  @{ */
-
+    //TODO: change MCFC function to ALgo function
     double get_elapsed_time(void) const override
     {
       return (this->MCFC::TimeMCF());
     }
 
     /*--------------------------------------------------------------------------*/
+    //TODO: change MCFC function to Algo function.
 
     OFValue get_lb(void) override { return (this->MCFC::MCFGetDFO()); }
 
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+    //TODO: change MCFC function to Algo function.
 
     OFValue get_ub(void) override { return (this->MCFC::MCFGetFO()); }
 
     /*--------------------------------------------------------------------------*/
-
+    //TODO: change MCFC function to Algo function.
     bool has_var_solution(void) override
     {
       switch (this->MCFC::MCFGetStatus())
@@ -497,7 +521,7 @@ namespace SMSpp_di_unipi_it
     }
 
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    //TODO: change MCFC function to Algo function.
     bool has_dual_solution(void) override
     {
       switch (this->MCFGetStatus())
@@ -668,7 +692,7 @@ namespace SMSpp_di_unipi_it
      *      void WriteMCF( ostream &oStrm , int frmt = 0 )
      *
      * of the base (private) MCFClass public, so that it can be freely used. */
-
+    //TODO: change MCFC function to Algo function.
     using MCFC::WriteMCF;
 
     /*--------------------------------------------------------------------------*/
@@ -1049,17 +1073,17 @@ namespace SMSpp_di_unipi_it
   /*--------------------------------------------------------------------------*/
   /*------------------- inline methods implementation ------------------------*/
   /*--------------------------------------------------------------------------*/
-
-  template <class MCFC>
-  State *MCFSolver<MCFC>::get_State(void) const
+  //TODO: change MCFC function to Algo function.
+  template <class Algo>
+  State *MCFSolver<Algo>::get_State(void) const
   {
     return (new MCFSolverState(const_cast<MCFSolver<MCFC> *>(this)));
   }
 
   /*--------------------------------------------------------------------------*/
-
-  template <class MCFC>
-  void MCFSolver<MCFC>::put_State(const State &state)
+  //TODO: change MCFC function to Algo function.
+  template <class Algo>>
+  void MCFSolver<Algo>::put_State(const State &state)
   {
     // if state is not a const MCFSolverState &, exception will be thrown
     auto s = dynamic_cast<const MCFSolverState &>(state);
@@ -1068,9 +1092,9 @@ namespace SMSpp_di_unipi_it
   }
 
   /*--------------------------------------------------------------------------*/
-
-  template <class MCFC>
-  void MCFSolver<MCFC>::put_State(State &&state)
+  //TODO: change MCFC function to Algo function.
+  template <class Algo>
+  void MCFSolver<Algo>::put_State(State &&state)
   {
     // if state is not a MCFSolverState &&, exception will be thrown
     auto s = dynamic_cast<MCFSolverState &&>(state);
@@ -1079,9 +1103,9 @@ namespace SMSpp_di_unipi_it
   }
 
   /*--------------------------------------------------------------------------*/
-
-  template <class MCFC>
-  void MCFSolver<MCFC>::process_outstanding_Modification(void)
+  //TODO: change MCFC function to Algo function.
+  template <class Algo>
+  void MCFSolver<Algo>::process_outstanding_Modification(void)
   {
     // no-frills loop: do them in order, with no attempt at optimizing
     // note that NBModification have already been dealt with and therefore need
@@ -1099,8 +1123,8 @@ namespace SMSpp_di_unipi_it
 
   /*--------------------------------------------------------------------------*/
 
-  template <class MCFC>
-  void MCFSolver<MCFC>::guts_of_poM(c_p_Mod mod)
+  template <class Algo>
+  void MCFSolver<Algo>::guts_of_poM(c_p_Mod mod)
   {
     auto MCFB = static_cast<MCFBlock *>(f_Block);
 
@@ -1135,6 +1159,7 @@ namespace SMSpp_di_unipi_it
         if (rng.second == rng.first + 1)
         {
           if (!MCFB->is_deleted(rng.first))
+            //TODO: change MCFC function to Algo function.
             MCFC::ChgCost(rng.first, MCFB->get_C(rng.first));
         }
         else
@@ -1149,10 +1174,11 @@ namespace SMSpp_di_unipi_it
             for (auto &ci : NCost)
               if (std::isnan(ci))
                 ci = 0;
-
+            //TODO: change MCFC function to Algo function.
             MCFC::ChgCosts(NCost.data(), nullptr, rng.first, rng.second);
           }
           else
+            //TODO: change MCFC function to Algo function.
             MCFC::ChgCosts(MCFB->get_C().data() + rng.first, nullptr,
                            rng.first, rng.second);
         }
@@ -1162,28 +1188,32 @@ namespace SMSpp_di_unipi_it
         if (rng.second == rng.first + 1)
         {
           if (!MCFB->is_deleted(rng.first))
+            //TODO: change MCFC function to Algo function.
             MCFC::ChgUCap(rng.first, MCFB->get_U(rng.first));
         }
         else
+          //TODO: change MCFC function to Algo function.
           MCFC::ChgUCaps(MCFB->get_U().data() + rng.first, nullptr,
                          rng.first, rng.second);
         return;
 
       case (MCFBlockMod::eChgDfct):
         if (rng.second == rng.first + 1)
+          //TODO: change MCFC function to Algo function.
           MCFC::ChgDfct(rng.first, MCFB->get_B(rng.first));
         else
+          //TODO: change MCFC function to Algo function.
           MCFC::ChgDfcts(MCFB->get_B().data() + rng.first, nullptr,
                          rng.first, rng.second);
         return;
-
+      //TODO: change MCFC function to Algo function.
       case (MCFBlockMod::eOpenArc):
         for (; rng.first < rng.second; ++rng.first)
           if ((!MCFB->is_deleted(rng.first)) &&
               (!MCFC::IsDeletedArc(rng.first)))
             MCFC::OpenArc(rng.first);
         return;
-
+      //TODO: change MCFC function to Algo function.
       case (MCFBlockMod::eCloseArc):
         for (; rng.first < rng.second; ++rng.first)
           if ((!MCFB->is_deleted(rng.first)) &&
@@ -1194,6 +1224,7 @@ namespace SMSpp_di_unipi_it
       case (MCFBlockMod::eAddArc):
       {
         auto ca = MCFB->get_C(rng.first);
+        //TODO: change MCFC function to Algo function.
         auto arc = MCFC::AddArc(MCFB->get_SN(rng.first),
                                 MCFB->get_EN(rng.first),
                                 MCFB->get_U(rng.first),
@@ -1204,6 +1235,7 @@ namespace SMSpp_di_unipi_it
       }
 
       case (MCFBlockMod::eRmvArc):
+        //TODO: change MCFC function to Algo function.
         MCFC::DelArc(rng.second - 1);
         return;
 
@@ -1221,6 +1253,7 @@ namespace SMSpp_di_unipi_it
         for (auto arc : tmod->nms())
           if ((!MCFB->is_deleted(arc)) &&
               (!MCFC::IsDeletedArc(arc)))
+            //TODO: change MCFC function to Algo function.
             MCFC::OpenArc(arc);
         return;
 
@@ -1228,6 +1261,7 @@ namespace SMSpp_di_unipi_it
         for (auto arc : tmod->nms())
           if ((!MCFB->is_deleted(arc)) &&
               (!MCFC::IsDeletedArc(arc)))
+            //TODO: change MCFC function to Algo function.
             MCFC::CloseArc(arc);
         return;
       }
@@ -1252,7 +1286,7 @@ namespace SMSpp_di_unipi_it
             nmsI.push_back(i);
           }
         nmsI.push_back(Inf<MCFBlock::Index>());
-
+        //TODO: change MCFC function to Algo function.
         MCFC::ChgCosts(NCost.data(), nmsI.data());
         return;
       }
@@ -1272,7 +1306,7 @@ namespace SMSpp_di_unipi_it
             nmsI.push_back(i);
           }
         nmsI.push_back(Inf<MCFBlock::Index>());
-
+        //TODO: change MCFC function to Algo function.
         MCFC::ChgUCaps(NCap.data(), nmsI.data());
         return;
       }
@@ -1286,7 +1320,7 @@ namespace SMSpp_di_unipi_it
         auto B = MCFB->get_B();
         for (MCFBlock::Index i = 0; i < NDfct.size(); i++)
           NDfct[i] = B[nmsI[i]];
-
+        //TODO: change MCFC function to Algo function.
         MCFC::ChgDfcts(NDfct.data(), nmsI.data());
         return;
       }
@@ -1309,8 +1343,8 @@ namespace SMSpp_di_unipi_it
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#endif /* MCFSolver.h included */
+#endif /* MCFLemonSolver.h included */
 
 /*--------------------------------------------------------------------------*/
-/*------------------------- End File MCFSolver.h ---------------------------*/
+/*------------------------- End File MCFLemonSolver.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
