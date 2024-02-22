@@ -1,8 +1,8 @@
 /*--------------------------------------------------------------------------*/
-/*--------------------------- File MCFSolver.cpp ---------------------------*/
+/*--------------------------- File MCFLemonSolver.cpp ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Implementation of the MCFSolver class.
+ * Implementation of the MCFLemonSolver class.
  *
  * \author Daniele Caliandro \n
  *         Universita' di Pisa \n
@@ -37,13 +37,13 @@
 
 #include "MCFSolver.h"
 
-#include "capacity_scaling.h"
+// #include "capacity_scaling.h"
 
-#include "cost_scaling.h"
+// #include "cost_scaling.h"
 
-#include "cycle_canceling.h"
+// #include "cycle_canceling.h"
 
-#include "network_simplex.h"
+// #include "network_simplex.h"
 
 #ifdef HAVE_CSCL2
  #include "CS2.h"

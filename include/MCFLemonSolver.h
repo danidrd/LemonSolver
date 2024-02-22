@@ -2,7 +2,7 @@
 /*-------------------------- File MCFSolver.h ------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Header file for the MCFSolver class, implementing the Solver interface, in
+ * Header file for the MCFLemonSolver class, implementing the Solver interface, in
  * particular in its CDASolver version, for Min-Cost Flow problems as set by
  * MCFBlock.
  *
@@ -11,11 +11,10 @@
  * template over the underlying :MCFClass object, which implies that most of
  * the code is in the header file.
  *
- * \author Antonio Frangioni \n
- *         Dipartimento di Informatica \n
+ * \author Daniele Caliandro \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Antonio Frangioni
+ * \copyright &copy; by Daniele Caliandro
  */
 /*--------------------------------------------------------------------------*/
 /*----------------------------- DEFINITIONS --------------------------------*/
@@ -29,8 +28,18 @@
 /*--------------------------------------------------------------------------*/
 
 #include "CDASolver.h"
+
 #include "MCFBlock.h"
+
 #include "MCFClass.h"
+
+#include "capacity_scaling.h"
+
+#include "cost_scaling.h"
+
+#include "cycle_canceling.h"
+
+#include "network_simplex.h"
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- NAMESPACE & USING -----------------------------*/
@@ -167,18 +176,27 @@ namespace SMSpp_di_unipi_it
      *  @{ */
 
     /*
-    //The type of the Algorithm
-       Algorithm
-    //The type of the digraph
-       Digraph
-    //The type of the flow amounts, capacity bounds and supply values
-       Value
-    //The type of the arc costs
-       Cost
-    //The type of the heap used for internal Dijkstra computations
-       Heap
-    //The traits class of the algorithm
-       Traits
+    The type of the Algorithm
+        Algorithm
+    The type of the digraph
+        Digraph
+    The type of the flow amounts, capacity bounds and supply values
+        Value
+    The type of the arc costs
+        Cost
+    The type of the heap used for internal Dijkstra computations
+        Heap
+    The traits class of the algorithm
+        Traits
+    The timer for compute() method
+        timer
+    The elapsed time for compute() method
+        elapsed
+    The status of the result of run() method in compute() method
+        status
+    The ProblemType status of the result of run() method in compute() method
+        status_2_pType
+    
     kUnEval = 0     compute() has not been called yet
 
     kUnbounded = kUnEval + 1     the model is provably unbounded
@@ -207,6 +225,10 @@ namespace SMSpp_di_unipi_it
     TR::Cost Costs;
     typedef typename TR::Heap Heap;
     typedef TR Traits;
+    std::time_t timer;
+    std::time_t elapsed;
+    int status = UNSOLVED;
+    Algo::ProblemType status_2_pType;
     /*--------------------------------------------------------------------------*/
 
     /*
@@ -281,6 +303,18 @@ namespace SMSpp_di_unipi_it
                                    /**< convenience value for easily allow derived classes
                                     * to further extend the set of types of return codes */
     };                             // end( dbl_par_type_MCFS )
+
+    /// public enum for the type of the solution
+
+    enum sol_type
+    {
+      UNSOLVED= NULL, ///< the problem has not been solved yet
+      OPTIMAL,           ///< the problem has been solved
+      KSTOPTIME = NULL,     ///< the problem has been stopped because of time limit
+      INFEASIBLE,   ///< the problem is provably infeasible
+      UNBOUNDED,    ///< the problem is provably unbounded
+      KERROR = NULL         ///< the problem has been stopped because of unrecoverable error
+    };               // end( sol_type )
 
     /** @} ---------------------------------------------------------------------*/
     /*----------------- CONSTRUCTING AND DESTRUCTING MCFSolver -----------------*/
@@ -374,12 +408,15 @@ namespace SMSpp_di_unipi_it
           throw(std::logic_error("cannot acquire read_lock on MCFBlock"));
 
         // load the new MCFBlock into the :MCFClass object
+        // TODO: change MCFC function to Algo function.
         MCFC::LoadNet(MCFB->get_MaxNNodes(), MCFB->get_MaxNArcs(),
                       MCFB->get_NNodes(), MCFB->get_NArcs(),
                       MCFB->get_U().empty() ? nullptr : MCFB->get_U().data(),
                       MCFB->get_C().empty() ? nullptr : MCFB->get_C().data(),
                       MCFB->get_B().empty() ? nullptr : MCFB->get_B().data(),
                       MCFB->get_SN().data(), MCFB->get_EN().data());
+
+        
         // TODO: PreProcess() changes the internal data of the MCFSolver using
         //       information about how the data of the MCF is *now*. If the data
         //       changes, some of the deductions (say, reducing the capacity but
@@ -404,7 +441,7 @@ namespace SMSpp_di_unipi_it
     // virtual void set_log( std::ostream *log_stream = nullptr ) override;
 
     /*--------------------------------------------------------------------------*/
-
+    //TODO: change MCFC function to Algo function.
     void set_par(idx_type par, int value) override
     {
       if (Solver_2_MCFClass_int[par] >= 0)
@@ -412,7 +449,7 @@ namespace SMSpp_di_unipi_it
     }
 
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    //TODO: change MCFC function to Algo function.
     void set_par(idx_type par, double value) override
     {
       if (Solver_2_MCFClass_dbl[par] >= 0)
@@ -436,6 +473,12 @@ namespace SMSpp_di_unipi_it
     /// (try to) solve the MCF encoded in the MCFBlock
     int compute( bool changedvars = true ) override
     {
+      //TODO: map errors from Algo to MCFSolver. DONE
+      //TODO: resolve for NULL values in LemonStatus_2_MCFstatus.
+      const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+        NULL, ProblemType::OPTIMAL, NULL, ProblemType::INFEASIBLE,
+        ProblemType::UNBOUNDED, NULL};
+      
       const static std::array<int, 6> MCFstatus_2_sol_type = {
           kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
           Solver::kError};
@@ -468,13 +511,18 @@ namespace SMSpp_di_unipi_it
         f_Block->read_unlock(); // read_unlock it
 
       // ensure the timer exists (or reset it)
-      //TODO: change MCFC function to Algo function.
-      this->MCFC::SetMCFTime();
+      //TODO: implement timer with ctime. feature not present in Algo.
+      time(&this->timer);
+      //this->MCFC::SetMCFTime();
 
       // then (try to) solve the MCF
-      //TODO: change MCFC function to Algo function.
-      //Probably running the method run of the Algo class.
-      this->MCFC::SolveMCF();
+      //TODO: change MCFC function to Algo function. DONE
+      //Probably running the method run of the Algo class. DONE
+
+      //this->MCFC::SolveMCF();
+      this->status = this->Algo::run();
+
+      this->elapsed = time(0) - this->timer;
 
       unlock(); // release self-lock
 
@@ -482,7 +530,7 @@ namespace SMSpp_di_unipi_it
       // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
       // hence the returned status has to be shifted by + 1
       //TODO: change MCFC function to Algo function.
-      return (MCFstatus_2_sol_type[this->MCFC::MCFGetStatus() + 1]);
+      return (MCFstatus_2_sol_type[this->get_status() + 1]);
     }
 
     /** @} ---------------------------------------------------------------------*/
@@ -490,6 +538,13 @@ namespace SMSpp_di_unipi_it
     /*--------------------------------------------------------------------------*/
     /** @name Accessing the found solutions (if any)
      *  @{ */
+
+    Algo::ProblemType get_status(void) const override
+    {
+      return (this->status);
+    }
+
+    /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
     //TODO: change MCFC function to ALgo function
     double get_elapsed_time(void) const override
     {
@@ -507,13 +562,13 @@ namespace SMSpp_di_unipi_it
     OFValue get_ub(void) override { return (this->MCFC::MCFGetFO()); }
 
     /*--------------------------------------------------------------------------*/
-    //TODO: change MCFC function to Algo function.
+    //TODO: change MCFC function to Algo function. DONE
     bool has_var_solution(void) override
     {
-      switch (this->MCFC::MCFGetStatus())
+      switch (this->get_status())
       {
-      case (MCFClass::kOK):
-      case (MCFClass::kUnbounded):
+      case (Algo::ProblemType::OPTIMAL):
+      case (Algo::ProblemType::UNBOUNDED):  
         return (true);
       default:
         return (false);
@@ -524,10 +579,10 @@ namespace SMSpp_di_unipi_it
     //TODO: change MCFC function to Algo function.
     bool has_dual_solution(void) override
     {
-      switch (this->MCFGetStatus())
+      switch (this->get_status())
       {
-      case (MCFClass::kOK):
-      case (MCFClass::kUnfeasible):
+      case (Algo::ProblemType::OPTIMAL):
+      case (Algo::ProblemType::UNFEASIBLE):
         return (true);
       default:
         return (false);
@@ -698,21 +753,16 @@ namespace SMSpp_di_unipi_it
     /*--------------------------------------------------------------------------*/
     /*------------------- METHODS FOR HANDLING THE PARAMETERS ------------------*/
     /*--------------------------------------------------------------------------*/
-    /** @name Handling the parameters of the MCFSolver
+    /** @name Handling the parameters of the MCFLemonSolver
      *
-     * Each MCFSolver< MCFC > may have its own extra int / double parameters. If
+     * Each MCFLemonSolver< Algo > may have its own extra int / double parameters. If
      * this is the case, it will have to specialize the following methods to
      * handle them. The general definition just handles the case of the
      *
      * intLastParCDAS ==> kReopt             whether or not to reoptimize
      *
-     * extra (int) parameter and otherwise issues the method of the base
-     * CDASolver class, which is OK for each MCFC that does *not* have any extra
-     * parameter of the corresponding type (apart from that). The get_*_par()
-     * methods exploit the same two const static arrays Solver_2_MCFClass_int and
-     * Solver_2_MCFClass_dbl as the set_*_par(), with a negative entry meaning
-     * "there is no such parameter in MCFSolver".
      *  @{ */
+
 
     [[nodiscard]] idx_type get_num_int_par(void) const override
     {
@@ -866,7 +916,7 @@ namespace SMSpp_di_unipi_it
     }
 
     /** @} ---------------------------------------------------------------------*/
-    /*------------ METHODS FOR HANDLING THE State OF THE MCFSolver -------------*/
+    /*------------ METHODS FOR HANDLING THE State OF THE MCFLemonSolver -------------*/
     /*--------------------------------------------------------------------------*/
     /** @name Handling the State of the MCFSolver
      *  @{ */
@@ -915,6 +965,7 @@ namespace SMSpp_di_unipi_it
       {
         // this is the "nuclear option": the MCFBlock has been re-loaded, so
         // the MCFClass solver also has to (immediately)
+        //TODO: change MCFC function to Algo function.
         auto MCFB = static_cast<MCFBlock *>(f_Block);
         MCFC::LoadNet(MCFB->get_MaxNNodes(), MCFB->get_MaxNArcs(),
                       MCFB->get_NNodes(), MCFB->get_NArcs(),
