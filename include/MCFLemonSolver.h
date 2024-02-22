@@ -20,8 +20,8 @@
 /*----------------------------- DEFINITIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#ifndef __MCFSolver
-#define __MCFSolver /* self-identification: #endif at the end of the file */
+#ifndef __MCFLemonSolver
+#define __MCFLemonSolver /* self-identification: #endif at the end of the file */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
