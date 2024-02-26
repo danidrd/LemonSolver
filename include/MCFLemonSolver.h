@@ -41,6 +41,10 @@
 
 #include "network_simplex.h"
 
+#include <ctime>
+
+#include <type_traits>
+
 /*--------------------------------------------------------------------------*/
 /*-------------------------- NAMESPACE & USING -----------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -100,18 +104,6 @@ namespace SMSpp_di_unipi_it
     *  @{ */
 
    /*
-   //The type of the Algorithm
-     Algorithm
-   //The type of the digraph
-     Digraph
-   //The type of the flow amounts, capacity bounds and supply values
-     Value
-   //The type of the arc costs
-     Cost
-   //The type of the heap used for internal Dijkstra computations
-     Heap
-   //The traits class of the algorithm
-     Traits
    kUnEval = 0     compute() has not been called yet
 
    kUnbounded = kUnEval + 1     the model is provably unbounded
@@ -332,6 +324,9 @@ namespace SMSpp_di_unipi_it
     {
       static_assert(std::is_base_of<MCFClass, MCFC>::value,
                     "MCFLemonSolver: MCFC must inherit from MCFClass");
+      static_assert(std::is_base_of<Graph, GR>::value,
+                    "MCFLemonSolver: GR must inherit from Graph");
+      static_assert(std
     }
 
     /*--------------------------------------------------------------------------*/
