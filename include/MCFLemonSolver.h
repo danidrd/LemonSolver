@@ -41,6 +41,8 @@
 
 #include "network_simplex.h"
 
+#include <lemon/concepts/maps.h>
+
 #include <ctime>
 
 #include <type_traits>
@@ -300,12 +302,12 @@ namespace SMSpp_di_unipi_it
 
     enum sol_type
     {
-      UNSOLVED= NULL, ///< the problem has not been solved yet
+      UNSOLVED //= NULL, ///< the problem has not been solved yet
       OPTIMAL,           ///< the problem has been solved
-      KSTOPTIME = NULL,     ///< the problem has been stopped because of time limit
+      KSTOPTIME //= NULL,     ///< the problem has been stopped because of time limit
       INFEASIBLE,   ///< the problem is provably infeasible
       UNBOUNDED,    ///< the problem is provably unbounded
-      KERROR = NULL         ///< the problem has been stopped because of unrecoverable error
+      KERROR //= NULL         ///< the problem has been stopped because of unrecoverable error
     };               // end( sol_type )
 
     /** @} ---------------------------------------------------------------------*/
@@ -317,16 +319,18 @@ namespace SMSpp_di_unipi_it
     /// constructor: does nothing special
     /** Void constructor: does nothing special, except verifying that the
      * template argument derives from MCFClass. */
-    //TODO : Add a static_assert to check if Algo is derived from the right class(WHICH CLASS?).
-    //TODO : Add a static_assert to check if GR, V and C are the right types.
-    //TODO : Add a control to ensure that GR is a supported graph type for MCFBlock.
+    //TODO : Add a static_assert to check if Algo is derived from the right class(WHICH CLASS?). DONE
+    //TODO : Add a static_assert to check if GR, V and C are the right types. DONE
+    //TODO : Add a control to ensure that GR is a supported graph type for MCFBlock. 
     MCFLemonSolver(void) : CDASolver(), Algo()
     {
-      static_assert(std::is_base_of<MCFClass, MCFC>::value,
-                    "MCFLemonSolver: MCFC must inherit from MCFClass");
+      static_assert(std::is_base_of<CapacityScaling, Algo>::value || std::is_base_of<CostScaling, Algo>::value
+                    std::is_base_of<CycleCanceling, Algo>::value || std::is_base_of<NetworkSimplex, Algo>::value,
+                    "MCFLemonSolver: Algo must inherit from CapacityScaling | CostScaling | CycleCanceling | NetworkSimplex");
       static_assert(std::is_base_of<Graph, GR>::value,
                     "MCFLemonSolver: GR must inherit from Graph");
-      static_assert(std
+      static_assert(std::is_same<V, C>::value,
+                    "MCFLemonSolver: V and C must be the same type");
     }
 
     /*--------------------------------------------------------------------------*/
@@ -404,12 +408,46 @@ namespace SMSpp_di_unipi_it
 
         // load the new MCFBlock into the :MCFClass object
         // TODO: change MCFC function to Algo function.
-        MCFC::LoadNet(MCFB->get_MaxNNodes(), MCFB->get_MaxNArcs(),
-                      MCFB->get_NNodes(), MCFB->get_NArcs(),
-                      MCFB->get_U().empty() ? nullptr : MCFB->get_U().data(),
-                      MCFB->get_C().empty() ? nullptr : MCFB->get_C().data(),
-                      MCFB->get_B().empty() ? nullptr : MCFB->get_B().data(),
-                      MCFB->get_SN().data(), MCFB->get_EN().data());
+        // TODO: convert array from MCFB functions to Map for Algo functions.
+
+
+
+        if(!MCFB->get_U().empty())
+        {
+          ReadMap u = array_to_map(MCFB->get_U());
+          Algo::upperMap(u);
+        }
+
+        if(!MCFB->get_C().empty())
+        {
+          ReadMap c = array_to_map(MCFB->get_C());
+          Algo::costMap(c);
+        }
+
+        if(!MCFB->get_B().empty())
+        {
+          ReadMap b = array_to_map(MCFB->get_B());
+          Algo::lowerMap(b);
+
+        }
+
+        // if(!MCFB->get_SN().empty())
+        // {
+        //   ReadMap sn = array_to_map(MCFB->get_SN());
+          
+        // }
+
+        // if(!MCFB->get_EN().empty())
+        // {
+        //   ReadMap en = array_to_map(MCFB->get_EN());
+        // }
+
+        // MCFC::LoadNet(MCFB->get_MaxNNodes(), MCFB->get_MaxNArcs(),
+        //               MCFB->get_NNodes(), MCFB->get_NArcs(),
+        //               MCFB->get_U().empty() ? nullptr : MCFB->get_U().data(),
+        //               MCFB->get_C().empty() ? nullptr : MCFB->get_C().data(),
+        //               MCFB->get_B().empty() ? nullptr : MCFB->get_B().data(),
+        //               MCFB->get_SN().data(), MCFB->get_EN().data());
 
         
         // TODO: PreProcess() changes the internal data of the MCFSolver using
@@ -525,7 +563,8 @@ namespace SMSpp_di_unipi_it
       // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
       // hence the returned status has to be shifted by + 1
       //TODO: change MCFC function to Algo function.
-      return (MCFstatus_2_sol_type[this->get_status() + 1]);
+      //Da rivedere, this->get_status() potrebbe non essere corretta.
+      return (MCFstatus_2_sol_type[this->get_status()]);
     }
 
     /** @} ---------------------------------------------------------------------*/
@@ -533,8 +572,11 @@ namespace SMSpp_di_unipi_it
     /*--------------------------------------------------------------------------*/
     /** @name Accessing the found solutions (if any)
      *  @{ */
+    
+    
 
-    Algo::ProblemType get_status(void) const override
+
+    int get_status(void) const override
     {
       return (this->status);
     }
@@ -744,6 +786,22 @@ namespace SMSpp_di_unipi_it
      * of the base (private) MCFClass public, so that it can be freely used. */
     //TODO: change MCFC function to Algo function.
     using MCFC::WriteMCF;
+
+  /*--------------------------------------------------------------------------*/
+  /*------------------- METHODS UTILS ----------------------------------------*/
+  /*--------------------------------------------------------------------------*/
+
+    //Method for converting a 2D array to a map.
+    template<typename V, int N>
+    map<V, V> array_to_map(T(& a)[N][2])
+    {
+      map<V, V> result;
+      std::transform(
+        a, a+N, std::inserter(result, result.begin()),
+        [](V const(&p)[2]) { return std::make_pair(p[0], p[1]); }
+      );
+    }
+
 
     /*--------------------------------------------------------------------------*/
     /*------------------- METHODS FOR HANDLING THE PARAMETERS ------------------*/
