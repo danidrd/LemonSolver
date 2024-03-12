@@ -41,11 +41,17 @@
 
 #include "network_simplex.h"
 
+#include "Block.h"
+
+#include <lemon/list_graph.h>
+
 #include <lemon/concepts/maps.h>
 
 #include <ctime>
 
 #include <type_traits>
+
+#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- NAMESPACE & USING -----------------------------*/
@@ -214,11 +220,11 @@ namespace SMSpp_di_unipi_it
     kLowPrecision = kError + 1   a solution found but not provably optimal
     */
     // New Add
-    TR::Digraph Digraph;
-    TR::Value Value;
-    TR::Cost Costs;
-    typedef typename TR::Heap Heap;
-    typedef TR Traits;
+    GR digraph;
+    V* value;
+    C* costs;
+    typedef typename TR::Heap heap;
+    typedef TR traits;
     std::time_t timer;
     std::time_t elapsed;
     int status = UNSOLVED;
@@ -322,7 +328,7 @@ namespace SMSpp_di_unipi_it
     //TODO : Add a static_assert to check if Algo is derived from the right class(WHICH CLASS?). DONE
     //TODO : Add a static_assert to check if GR, V and C are the right types. DONE
     //TODO : Add a control to ensure that GR is a supported graph type for MCFBlock. 
-    MCFLemonSolver(void) : CDASolver(), Algo()
+    MCFLemonSolver(void) : CDASolver(), Algo(digraph)
     {
       static_assert(std::is_base_of<CapacityScaling, Algo>::value || std::is_base_of<CostScaling, Algo>::value
                     std::is_base_of<CycleCanceling, Algo>::value || std::is_base_of<NetworkSimplex, Algo>::value,
@@ -411,37 +417,75 @@ namespace SMSpp_di_unipi_it
         // TODO: convert array from MCFB functions to Map for Algo functions.
 
 
+        digraph::reserveNode(MCFB->get_MaxNNodes());
+        digraph::reserveArc(MCFB->get_MaxNArcs());
 
         if(!MCFB->get_U().empty())
         {
+          //to review
           ReadMap u = array_to_map(MCFB->get_U());
           Algo::upperMap(u);
         }
 
         if(!MCFB->get_C().empty())
         {
+          //to review
           ReadMap c = array_to_map(MCFB->get_C());
           Algo::costMap(c);
         }
 
         if(!MCFB->get_B().empty())
         {
+          //to review
           ReadMap b = array_to_map(MCFB->get_B());
-          Algo::lowerMap(b);
+          std::transform(b.begin(), b.end(), b.begin(),
+                          [](std::pair<const V, V>& coppia){
+                            coppia.second = -coppia.second;
+                            return coppia;
+                          });
+          Algo::supplyMap(b);
 
         }
+        std::vector<std::pair<Node,Node>> pnodes;
+        std::vector<unsigned int> avoid;
+        std::vector<Node> nodes;
 
-        // if(!MCFB->get_SN().empty())
-        // {
-        //   ReadMap sn = array_to_map(MCFB->get_SN());
+        for(unsigned int i = 0; i < MCFB->get_NNodes();i++){
+          Node n;
+          //Using std::find for check if a node is already added to the vector
+          //This mechanic resolve the case in which we pushback onto pnodes and we want the values of n and m,
+          //that could be already created, in order to avoid to add a node twice
+          auto itt = std::find(avoid.begin(), avoid.end(), i);
+          if(itt == avoid.end()){
+            n = digraph::addNode();
+            nodes.push_back(n);
+          }else{
+            //if yes, simply assign to n the element of the array nodes which contains the wanted node
+            n = nodes[std::distance(avoid.begin(),itt)];
+          }
           
-        // }
+          for(j = 0; j < MCFB->get_NArcs();j++){
+            if(get_SN(j) == i){
+              Node m;
+              //The same as above
+              auto it = std::find(avoid.begin(), avoid.end(), get_EN(j));
+              if( it == avoid.end()){
+                m = digraph::addNode();
+                nodes.push_back(m);
+              }else{
+                m = nodes[std::distance(avoid.begin(), it)];
+              }
 
-        // if(!MCFB->get_EN().empty())
-        // {
-        //   ReadMap en = array_to_map(MCFB->get_EN());
-        // }
+              pnodes.push_back(std::make_pair(n, m));
+              avoid.push_back(get_EN(j));
+            }
+          }
+        }
 
+        for(int i = 0; i < nodes.size();i++){
+          digraph::addArc(nodes[i].first, nodes[i].second);
+        }
+        //Completed, miss only get_SN() and get_EN() that are not supported by Lemon.
         // MCFC::LoadNet(MCFB->get_MaxNNodes(), MCFB->get_MaxNArcs(),
         //               MCFB->get_NNodes(), MCFB->get_NArcs(),
         //               MCFB->get_U().empty() ? nullptr : MCFB->get_U().data(),
@@ -790,7 +834,7 @@ namespace SMSpp_di_unipi_it
   /*--------------------------------------------------------------------------*/
   /*------------------- METHODS UTILS ----------------------------------------*/
   /*--------------------------------------------------------------------------*/
-
+    //to review
     //Method for converting a 2D array to a map.
     template<typename V, int N>
     map<V, V> array_to_map(T(& a)[N][2])
