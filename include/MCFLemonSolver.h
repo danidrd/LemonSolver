@@ -45,6 +45,8 @@
 
 #include <lemon/list_graph.h>
 
+#include <lemon/smart_graph.h>
+
 #include <lemon/concepts/maps.h>
 
 #include <ctime>
@@ -420,6 +422,15 @@ namespace SMSpp_di_unipi_it
         digraph::reserveNode(MCFB->get_MaxNNodes());
         digraph::reserveArc(MCFB->get_MaxNArcs());
 
+        for(int i = 0; i < MCFB->get_NNodes();i++){
+          digraph.addNode(new Node());
+        }
+
+        for(int i = 0; i < MCFB->get_NArcs(); i++){
+          digraph.addArc(digraph.nodeFromId(MCFB->get_SN(i)), digraph.nodeFromId(MCFB->get_EN(i)));
+        }
+
+
         if(!MCFB->get_U().empty())
         {
           //to review
@@ -446,45 +457,10 @@ namespace SMSpp_di_unipi_it
           Algo::supplyMap(b);
 
         }
-        std::vector<std::pair<Node,Node>> pnodes;
-        std::vector<unsigned int> avoid;
-        std::vector<Node> nodes;
 
-        for(unsigned int i = 0; i < MCFB->get_NNodes();i++){
-          Node n;
-          //Using std::find for check if a node is already added to the vector
-          //This mechanic resolve the case in which we pushback onto pnodes and we want the values of n and m,
-          //that could be already created, in order to avoid to add a node twice
-          auto itt = std::find(avoid.begin(), avoid.end(), i);
-          if(itt == avoid.end()){
-            n = digraph::addNode();
-            nodes.push_back(n);
-          }else{
-            //if yes, simply assign to n the element of the array nodes which contains the wanted node
-            n = nodes[std::distance(avoid.begin(),itt)];
-          }
-          
-          for(j = 0; j < MCFB->get_NArcs();j++){
-            if(get_SN(j) == i){
-              Node m;
-              //The same as above
-              auto it = std::find(avoid.begin(), avoid.end(), get_EN(j));
-              if( it == avoid.end()){
-                m = digraph::addNode();
-                nodes.push_back(m);
-              }else{
-                m = nodes[std::distance(avoid.begin(), it)];
-              }
+        
 
-              pnodes.push_back(std::make_pair(n, m));
-              avoid.push_back(get_EN(j));
-            }
-          }
-        }
 
-        for(int i = 0; i < nodes.size();i++){
-          digraph::addArc(nodes[i].first, nodes[i].second);
-        }
         //Completed, miss only get_SN() and get_EN() that are not supported by Lemon.
         // MCFC::LoadNet(MCFB->get_MaxNNodes(), MCFB->get_MaxNArcs(),
         //               MCFB->get_NNodes(), MCFB->get_NArcs(),
@@ -836,6 +812,8 @@ namespace SMSpp_di_unipi_it
   /*--------------------------------------------------------------------------*/
     //to review
     //Method for converting a 2D array to a map.
+    //TODO: Return an ArcMap<K, V>.
+    //TODO: Make another func for NodeMap<K, V>
     template<typename V, int N>
     map<V, V> array_to_map(T(& a)[N][2])
     {
