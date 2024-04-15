@@ -49,6 +49,8 @@
 
 #include <lemon/concepts/maps.h>
 
+#include <lemon/concepts/graph.h>
+
 #include <ctime>
 
 #include <type_traits>
@@ -423,51 +425,76 @@ namespace SMSpp_di_unipi_it
         digraph::reserveArc(MCFB->get_MaxNArcs());
 
         for(int i = 0; i < MCFB->get_NNodes();i++){
-          digraph.addNode(new Node());
+          digraph->addNode(new Node());
         }
 
         for(int i = 0; i < MCFB->get_NArcs(); i++){
-          digraph.addArc(digraph.nodeFromId(MCFB->get_SN(i)), digraph.nodeFromId(MCFB->get_EN(i)));
+          digraph->addArc(digraph.nodeFromId(MCFB->get_SN(i)), digraph.nodeFromId(MCFB->get_EN(i)));
         }
+
+        auto dgp = new GR;
+
+        auto MCFB = static_cast< MCFBlock * >( f_block );
+
+        dgp->reserveNode( MCFB->get_MaxNNodes() );
+        auto n = MCFB->get_NNodes();
+
+        for( Index i = 0; i < n; ++i)
+          dgp->addNode();
+
+        dgp->reserveArc( MCFB->get_MaxNArcs() );
+        auto m = MCFB->get_NArcs();
+
+        c_Subset & sn = MCFB->get_SN();
+        c_Subset & en = MCFB->get_EN();
+
+        for( Index i = 0; i < m; ++i){
+          dgp->addArc( nodeFromId( sn[i] ), nodeFromId( en[i] ));
+        }
+        
+        
 
 
         if(!MCFB->get_U().empty())
         {
-          //to review
-          ReadMap u = array_to_map(MCFB->get_U());
-          Algo::upperMap(u);
+          Algo * AP;
+
+          AP = new Algo(*dgp);
+          ArcMap< V > um(*dgp);
+          c_Vec_FNumber & u = MCFB->get_U();
+          for( Index i = 0; i < m; ++i){
+          um.set( dgp->arcFromId(i), u[i]);
+          }
+          AP->upperMap(um);
         }
 
         if(!MCFB->get_C().empty())
         {
-          //to review
-          ReadMap c = array_to_map(MCFB->get_C());
-          Algo::costMap(c);
+          Algo * AP;
+
+          AP = new Algo(*dgp);
+          ArcMap< C > cm(*dgp);
+          c_Vec_FNumber & c = MCFB->get_C();
+          for( Index i = 0; i < m; ++i){
+            cm.set( dgp->arcFromId(i), c[i]);
+          }
+          AP->costMap(cm);
+
         }
 
         if(!MCFB->get_B().empty())
         {
-          //to review
-          ReadMap b = array_to_map(MCFB->get_B());
-          std::transform(b.begin(), b.end(), b.begin(),
-                          [](std::pair<const V, V>& coppia){
-                            coppia.second = -coppia.second;
-                            return coppia;
-                          });
-          Algo::supplyMap(b);
+          Algo * AP;
+
+          AP = new Algo(*dgp);
+          ArcMap< C > bm(*dgp);
+          c_Vec_FNumber & c = MCFB->get_B();
+          for( Index i = 0; i < m; ++i){
+            bm.set( dgp->arcFromId(i), b[i]);
+          }
+          AP->supplyMap(bm);
 
         }
-
-        
-
-
-        //Completed, miss only get_SN() and get_EN() that are not supported by Lemon.
-        // MCFC::LoadNet(MCFB->get_MaxNNodes(), MCFB->get_MaxNArcs(),
-        //               MCFB->get_NNodes(), MCFB->get_NArcs(),
-        //               MCFB->get_U().empty() ? nullptr : MCFB->get_U().data(),
-        //               MCFB->get_C().empty() ? nullptr : MCFB->get_C().data(),
-        //               MCFB->get_B().empty() ? nullptr : MCFB->get_B().data(),
-        //               MCFB->get_SN().data(), MCFB->get_EN().data());
 
         
         // TODO: PreProcess() changes the internal data of the MCFSolver using
