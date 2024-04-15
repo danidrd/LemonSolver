@@ -335,6 +335,7 @@ namespace SMSpp_di_unipi_it
     //TODO : Add a control to ensure that GR is a supported graph type for MCFBlock. 
     MCFLemonSolver(void) : CDASolver(), Algo(digraph)
     {
+      AP = NULL;
       static_assert(std::is_base_of<CapacityScaling, Algo>::value || std::is_base_of<CostScaling, Algo>::value
                     std::is_base_of<CycleCanceling, Algo>::value || std::is_base_of<NetworkSimplex, Algo>::value,
                     "MCFLemonSolver: Algo must inherit from CapacityScaling | CostScaling | CycleCanceling | NetworkSimplex");
