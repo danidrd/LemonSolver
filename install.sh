@@ -15,11 +15,9 @@ wget https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84
 tar -xvzf boost_1_84_0.tar.gz
 rm boost_1_84_0.tar.gz
 
-git clone https://gitlab.com/libeigen/eigen.git
+sudo apt install libeigen3-dev
 
 sudo apt install libnetcdf-c++4-dev
-tar -xvzf netcdf-c-4.9.2.tar.gz
-rm netcdf-c-4.9.2.tar.gz
 
 git clone https://github.com/frangio68/Min-Cost-Flow-Class.git
 
