@@ -11,9 +11,7 @@ make
 
 cd ../..
 #DOWNLOAD boost, netCDF, eigen, bundlesolver, langragiandualsolver, milpsolver, tests, mcfblock, mmcfblock, smspp
-wget https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.gz
-tar -xvzf boost_1_84_0.tar.gz
-rm boost_1_84_0.tar.gz
+sudo apt install libboost-dev
 
 sudo apt install libeigen3-dev
 
