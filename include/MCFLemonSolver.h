@@ -487,10 +487,10 @@ namespace SMSpp_di_unipi_it
           Algo * AP;
 
           AP = new Algo(*dgp);
-          ArcMap< C > bm(*dgp);
+          ArcMap< V > bm(*dgp);
           c_Vec_FNumber & c = MCFB->get_B();
           for( Index i = 0; i < m; ++i){
-            bm.set( dgp->arcFromId(i), b[i]);
+            bm.set( dgp->arcFromId(i), -b[i]);
           }
           AP->supplyMap(bm);
 
