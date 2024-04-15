@@ -224,6 +224,7 @@ namespace SMSpp_di_unipi_it
     kLowPrecision = kError + 1   a solution found but not provably optimal
     */
     // New Add
+    Algo * AP;
     GR digraph;
     V* value;
     C* costs;
@@ -453,13 +454,10 @@ namespace SMSpp_di_unipi_it
         }
         
         
-
+        AP = new Algo(*dgp);
 
         if(!MCFB->get_U().empty())
         {
-          Algo * AP;
-
-          AP = new Algo(*dgp);
           ArcMap< V > um(*dgp);
           c_Vec_FNumber & u = MCFB->get_U();
           for( Index i = 0; i < m; ++i){
@@ -470,9 +468,6 @@ namespace SMSpp_di_unipi_it
 
         if(!MCFB->get_C().empty())
         {
-          Algo * AP;
-
-          AP = new Algo(*dgp);
           ArcMap< C > cm(*dgp);
           c_Vec_FNumber & c = MCFB->get_C();
           for( Index i = 0; i < m; ++i){
@@ -484,9 +479,6 @@ namespace SMSpp_di_unipi_it
 
         if(!MCFB->get_B().empty())
         {
-          Algo * AP;
-
-          AP = new Algo(*dgp);
           ArcMap< V > bm(*dgp);
           c_Vec_FNumber & c = MCFB->get_B();
           for( Index i = 0; i < m; ++i){
