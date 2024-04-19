@@ -2,20 +2,24 @@
 /*-------------------------- File MCFSolver.h ------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Header file for the MCFLemonSolver class, implementing the Solver interface, in
- * particular in its CDASolver version, for Min-Cost Flow problems as set by
- * MCFBlock.
+ * Header file for the MCFLemonSolver class, implementing the Solver
+ * interface, in particular in its CDASolver version, for Min-Cost Flow
+ * problems as set by MCFBlock.
  *
- * This is only a relatively thin wrapper class around solvers under the
- * MCFClass interface. To avoid a pointer to an internal object, the class is
- * template over the underlying :MCFClass object, which implies that most of
- * the code is in the header file.
+ * This is based on interfacing algorithms implemented in the LEMON
+ * (Library for Efficient Modeling and Optimization in Networks) project,
+ * as currently found at
+ *
+ *     https://lemon.cs.elte.hu/trac/lemon
  *
  * \author Daniele Caliandro \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Daniele Caliandro
- */
+ * \author Antonio Frangioni \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Daniele Caliandro, Antonio Frangioni
 /*--------------------------------------------------------------------------*/
 /*----------------------------- DEFINITIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -47,15 +51,6 @@
 
 #include <lemon/smart_graph.h>
 
-#include <lemon/concepts/maps.h>
-
-#include <lemon/concepts/graph.h>
-
-#include <ctime>
-
-#include <type_traits>
-
-#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- NAMESPACE & USING -----------------------------*/
@@ -77,28 +72,107 @@ namespace SMSpp_di_unipi_it
 
   class MCFSolverState; // forward declaration of MCFSolverState
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------- TEMPLATE TYPES --------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @defgroup MCFLemonSolver_TYPES Template Types in MCFLemonSolver.h
+ *
+ * Algorithms in the LEMON projects are template over at least three types:
+ *
+ * - GR, which is the type of graph (DISCUSS THE POSSIBILITIES);
+ *
+ * - V, which is the type of flows / deficits; typically, double can be used
+ *   for maximum compatibility, but int (or even smaller) would yeld better
+ *   performances;
+ *
+ * - C, which is the type of ar costs; typically, double can be used for
+ *   maximum compatibility, but int (or even smaller) would yeld better
+ *   performances;
+ *
+ * Furthermore, scaling-type algorithms may behave in different ways
+ * according to which combination of V and C is used, and there are different
+ * "traits" for this which are another scaling parameter. However, we prefer
+ * that the MCFLemonSolver class is always template over the three first
+ * parameter only, which is why we define SMSppCapacityScaling and
+ * SMSppCostScaling as template over < GR , V , C > and using the default
+ * trait.
+ *
+ * Thus, the concept LEMONGraph is defined that only allows all possible
+ * types of LEMON graphs, i.e., (DISCUSS THE POSSIBILITIES);
+ *
+ * Similarly, the concept LEMONAlgorithm is defined that only allows all
+ * possible types of LEMON algorithms, i.e., [SMSpp]CapacityScaling,
+ * [SMSpp]CostScaling, CycleCanceling, and NetworkSimplex.
+ *
+ *  @{ */
+
+ /// concept for "one of the LEMON graphs"
+ template< typename Type >
+  concept LEMONGraph =
+   std::is_same< Type , SmartDigraph >::value   ||
+   std::is_same< Type , StaticDigraph >::value;
+
+ //!! std::is_base_of< Graph , Type >::value;
+ /*!!
+   std::is_same< Type , CompactDigraph >::value ||
+   std::is_same< Type , FullDigraph >::value;
+   std::is_same< Type , GridGraph >::value      ||
+   std::is_same< Type , HypercubeGraph >::value ||
+   !!*/
+
+ /// CapacityScaling algorithm using the default trait
+ template< LEMONGraph GR , typename V , typename C >
+ class SMSppCapacityScaling : public
+  CapacityScaling< GR , V , C , CapacityScalingDefaultTraits< GR , V , C > >
+  {};
+
+ /// CostScaling algorithm using the default trait
+ template < LEMONGraph GR , typename V , typename C >
+ class SMSppCostScaling : public
+  CostScaling< GR , V , C , CostScalingDefaultTraits< GR , V , C > >
+  {};
+
+
   /*--------------------------------------------------------------------------*/
   /*------------------------------- CLASSES ----------------------------------*/
   /*--------------------------------------------------------------------------*/
   /** @defgroup MCFSolver_CLASSES Classes in MCFSolver.h
   *  @{ */
 
-  /*--------------------------------------------------------------------------*/
-  /*-------------------------- CLASS MCFLemonSolver -------------------------------*/
-  /*--------------------------------------------------------------------------*/
-  /*--------------------------- GENERAL NOTES --------------------------------*/
-  /*--------------------------------------------------------------------------*/
-  /// CDASolver for MCFBlock
-  /** The MCFLemonSolver implements Algo interface that allow MCFLemonSolver to use
-  * methods from any MCF algorithms of Lemon library.
-  * Because the linear MCF problem is a Linear Program it has a(n exact) dual,
-  * and therefore MCFLemonSolver implements the CDASolver interface for also
-  * giving out dual information.
-  *
-  * This is only a relatively thin wrapper class around solvers under the
-  * MCFClass interface. To avoid a pointer to an internal object, the class is
-  * template over the underlying :MCFClass object, which implies that most of
-  * the code is in the header file. */
+/*--------------------------------------------------------------------------*/
+/*------------------------ CLASS MCFLemonSolver ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/*--------------------------- GENERAL NOTES --------------------------------*/
+/*--------------------------------------------------------------------------*/
+/// CDASolver for MCFBlock based on the LEMON project
+/** The MCFLemonSolver implements Solver interface for MCFBlock that represent
+ * (Linear) Min-Cost Flow (MCF) problems, using algorithms of LEMON library.
+ * Because MCF is a Linear Program it has a(n exact) dual, and therefore
+ * MCFLemonSolver implements the CDASolver interface for also giving out dual
+ * information.
+ *
+ * The MCFLemonSolver is template over four different types:
+ *
+ * - GR, which is the type of graph (DISCUSS THE POSSIBILITIES);
+ *
+ * - V, which is the type of flows / deficits; typically, double can be used
+ *   for maximum compatibility, but int (or even smaller) would yeld better
+ *   performances;
+ *
+ * - C, which is the type of ar costs; typically, double can be used for
+ *   maximum compatibility, but int (or even smaller) would yeld better
+ *   performances;
+ *
+ * - Algo, which is the specific algorithm (itself, template over GR, V, and
+ *   C) implemented in the LEMON class (DISCUSS THE POSSIBILITIES);
+ *   Note that scaling-type algorithms may behave in different ways according
+ *   to which combination of V and C is used, and there are different
+ *   "traits" for this which are another scaling parameter. However, in order
+ *   to make MCFLemonSolver class template over always the same number of
+ *   template parameters we fix the use of the default trait, which is why
+ *   SMSppCapacityScaling and SMSppCostScaling are defined (as template over
+ *   < GR , V , C >) that are meant to be used instead of the original
+ *   CapacityScaling and CostScaling. */
 
   template <typename Algo, typename GR, typename V, typename C>
   class MCFLemonSolver : public CDASolver, private Algo< GR, V, C >
@@ -109,23 +183,57 @@ namespace SMSpp_di_unipi_it
    /*--------------------------------------------------------------------------*/
 
   public:
-   /*--------------------------------------------------------------------------*/
-   /*---------------------------- PUBLIC TYPES --------------------------------*/
-   /*--------------------------------------------------------------------------*/
-   /** @name Public Types
-    *  @{ */
-
-   /*
+/*--------------------------------------------------------------------------*/
+/*---------------------------- PUBLIC TYPES --------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @name Public Types
    kUnEval = 0     compute() has not been called yet
 
    kUnbounded = kUnEval + 1     the model is provably unbounded
+ *  @{ */
 
-#include "CDASolver.h"
+/*  The type of the Algorithm
+        Algorithm
+    The type of the digraph
+        Digraph
+    The type of the flow amounts, capacity bounds and supply values
+        Value
+    The type of the arc costs
+        Cost
+    The type of the heap used for internal Dijkstra computations
+        Heap
+    The traits class of the algorithm
+        Traits
+    The timer for compute() method
+        timer
+    The elapsed time for compute() method
+        elapsed
+    The status of the result of run() method in compute() method
+        status
+    The ProblemType status of the result of run() method in compute() method
+        status_2_pType
+    
+    kUnEval = 0     compute() has not been called yet
 
-#include "MCFBlock.h"
+    kUnbounded = kUnEval + 1     the model is provably unbounded
 
-#include "MCFClass.h"
+    kInfeasible                  the model is provably infeasible
 
+    kBothInfeasible = kInfeasible + 1     both primal and dual infeasible
+
+    kOK = 7         successful compute()
+                    Any return value between kUnEval (excluded) and kOK
+        (included) means that the object ran smoothly
+
+    kStopTime = kOK + 1          stopped because of time limit
+
+    kStopIter                    stopped because of iteration limit
+
+    kError = 15     compute() stopped because of unrecoverable error
+                    Any return value >= kError means that the object was
+         forced to stop due to some error, e.g. of numerical nature
+
+    kLowPrecision = kError + 1   a solution found but not provably optimal
 /*--------------------------------------------------------------------------*/
 /*-------------------------- NAMESPACE & USING -----------------------------*/
 /*--------------------------------------------------------------------------*/
