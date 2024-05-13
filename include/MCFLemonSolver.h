@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*/
-/*-------------------------- File MCFSolver.h ------------------------------*/
+/*------------------------ File MCFLemonSolver.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
  * Header file for the MCFLemonSolver class, implementing the Solver
@@ -20,12 +20,14 @@
  *         Universita' di Pisa \n
  *
  * \copyright &copy; by Daniele Caliandro, Antonio Frangioni
+ */
 /*--------------------------------------------------------------------------*/
 /*----------------------------- DEFINITIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 #ifndef __MCFLemonSolver
-#define __MCFLemonSolver /* self-identification: #endif at the end of the file */
+ #define __MCFLemonSolver
+                      /* self-identification: #endif at the end of the file */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -35,42 +37,35 @@
 
 #include "MCFBlock.h"
 
-#include "MCFClass.h"
+#include "lemon/capacity_scaling.h"
 
-#include "capacity_scaling.h"
+#include "lemon/cost_scaling.h"
 
-#include "cost_scaling.h"
+#include "lemon/cycle_canceling.h"
 
-#include "cycle_canceling.h"
+#include "lemon/network_simplex.h"
 
-#include "network_simplex.h"
-
-#include "Block.h"
+//!!
+#include <concepts>
 
 #include <lemon/list_graph.h>
 
 #include <lemon/smart_graph.h>
 
+#include <lemon/dimacs.h>
+
+#include <lemon/concepts/digraph.h>
+
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- NAMESPACE & USING -----------------------------*/
 /*--------------------------------------------------------------------------*/
-
 /// namespace for the Structured Modeling System++ (SMS++)
 namespace SMSpp_di_unipi_it
 {
-  template < typename GR, typename V, typename C >
-  using SMSppCapacityScaling< GR, V, C > =
-   CapacityScaling< GR, V, C, 
-   CapacityScalingDefaultTraits< GR, V, C > >;
-  
-  template < typename GR, typename V, typename C >
-  using SMSppCostScaling< GR, V, C > =
-   CostScaling< GR, V, C, 
-   CostScalingDefaultTraits< GR, V, C > >;
-  using namespace MCFClass_di_unipi_it;
-
-  class MCFSolverState; // forward declaration of MCFSolverState
+ using namespace lemon;
+ using namespace lemon::concepts;
+ using namespace std;
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- TEMPLATE TYPES --------------------------------*/
@@ -121,23 +116,22 @@ namespace SMSpp_di_unipi_it
    !!*/
 
  /// CapacityScaling algorithm using the default trait
- template< LEMONGraph GR , typename V , typename C >
+ template< LEMONGraph GR , typename V , typename C, typename TR >
  class SMSppCapacityScaling : public
   CapacityScaling< GR , V , C , CapacityScalingDefaultTraits< GR , V , C > >
   {};
 
  /// CostScaling algorithm using the default trait
- template < LEMONGraph GR , typename V , typename C >
+ template < LEMONGraph GR , typename V , typename C, typename TR >
  class SMSppCostScaling : public
   CostScaling< GR , V , C , CostScalingDefaultTraits< GR , V , C > >
   {};
 
-
-  /*--------------------------------------------------------------------------*/
-  /*------------------------------- CLASSES ----------------------------------*/
-  /*--------------------------------------------------------------------------*/
-  /** @defgroup MCFSolver_CLASSES Classes in MCFSolver.h
-  *  @{ */
+/** @} ---------------------------------------------------------------------*/
+/*------------------------------- CLASSES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @defgroup MCFLemonSolver_CLASSES Classes in MCFLemonSolver.h
+ *  @{ */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS MCFLemonSolver ----------------------------*/
@@ -174,15 +168,17 @@ namespace SMSpp_di_unipi_it
  *   < GR , V , C >) that are meant to be used instead of the original
  *   CapacityScaling and CostScaling. */
 
-  template <typename Algo, typename GR, typename V, typename C>
-  class MCFLemonSolver : public CDASolver, private Algo< GR, V, C >
-  {
+template< template< typename , typename , typename > typename Algo ,
+          typename GR , typename V , typename C >
+  requires LEMONGraph< GR >
+class MCFLemonSolver : public CDASolver
+{
+/*--------------------------------------------------------------------------*/
+/*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
+/*--------------------------------------------------------------------------*/
 
-   /*--------------------------------------------------------------------------*/
-   /*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
-   /*--------------------------------------------------------------------------*/
+ public:
 
-  public:
 /*--------------------------------------------------------------------------*/
 /*---------------------------- PUBLIC TYPES --------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -191,123 +187,8 @@ namespace SMSpp_di_unipi_it
 
    kUnbounded = kUnEval + 1     the model is provably unbounded
  *  @{ */
-
-/*  The type of the Algorithm
-        Algorithm
-    The type of the digraph
-        Digraph
-    The type of the flow amounts, capacity bounds and supply values
-        Value
-    The type of the arc costs
-        Cost
-    The type of the heap used for internal Dijkstra computations
-        Heap
-    The traits class of the algorithm
-        Traits
-    The timer for compute() method
-        timer
-    The elapsed time for compute() method
-        elapsed
-    The status of the result of run() method in compute() method
-        status
-    The ProblemType status of the result of run() method in compute() method
-        status_2_pType
-    
-    kUnEval = 0     compute() has not been called yet
-
-    kUnbounded = kUnEval + 1     the model is provably unbounded
-
-    kInfeasible                  the model is provably infeasible
-
-    kBothInfeasible = kInfeasible + 1     both primal and dual infeasible
-
-    kOK = 7         successful compute()
-                    Any return value between kUnEval (excluded) and kOK
-        (included) means that the object ran smoothly
-
-    kStopTime = kOK + 1          stopped because of time limit
-
-    kStopIter                    stopped because of iteration limit
-
-    kError = 15     compute() stopped because of unrecoverable error
-                    Any return value >= kError means that the object was
-         forced to stop due to some error, e.g. of numerical nature
-
-    kLowPrecision = kError + 1   a solution found but not provably optimal
-/*--------------------------------------------------------------------------*/
-/*-------------------------- NAMESPACE & USING -----------------------------*/
-/*--------------------------------------------------------------------------*/
-
-/// namespace for the Structured Modeling System++ (SMS++)
-namespace SMSpp_di_unipi_it
-{
-  using namespace MCFClass_di_unipi_it;
-
-  class MCFSolverState; // forward declaration of MCFSolverState
-
-  /*--------------------------------------------------------------------------*/
-  /*------------------------------- CLASSES ----------------------------------*/
-  /*--------------------------------------------------------------------------*/
-  /** @defgroup MCFSolver_CLASSES Classes in MCFSolver.h
-   *  @{ */
-
-  /*--------------------------------------------------------------------------*/
-  /*-------------------------- CLASS MCFSolver -------------------------------*/
-  /*--------------------------------------------------------------------------*/
-  /*--------------------------- GENERAL NOTES --------------------------------*/
-  /*--------------------------------------------------------------------------*/
-  /// CDASolver for MCFBlock
-  /** The MCFLemonSolver implements the Algo interface for Min-Cost Flow problems
-   * described by Lemon. Because the linear MCF problem is a Linear Program
-   * it has a(n exact) dual, and therefore MCFSolver implements the CDASolver
-   * interface for also giving out dual information.
-   *
-   * This is only a relatively thin wrapper class around solvers under the
-   * MCFClass interface. To avoid a pointer to an internal object, the class is
-   * template over the underlying :MCFClass object, which implies that most of
-   * the code is in the header file. */
-
-  template <typename Algo, typename GR, typename V, typename C>
-  class MCFLemonSolver : public CDASolver, private Algo< GR, V, C >
-  {
-
-    /*--------------------------------------------------------------------------*/
-    /*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
-    /*--------------------------------------------------------------------------*/
-  {
-
-    /*--------------------------------------------------------------------------*/
-    /*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
-    /*--------------------------------------------------------------------------*/
-
-  public:
-    /*--------------------------------------------------------------------------*/
-    /*---------------------------- PUBLIC TYPES --------------------------------*/
-    /*--------------------------------------------------------------------------*/
-    /** @name Public Types
-     *  @{ */
-
-    /*
-    The type of the Algorithm
-        Algorithm
-    The type of the digraph
-        Digraph
-    The type of the flow amounts, capacity bounds and supply values
-        Value
-    The type of the arc costs
-        Cost
-    The type of the heap used for internal Dijkstra computations
-        Heap
-    The traits class of the algorithm
-        Traits
-    The timer for compute() method
-        timer
-    The elapsed time for compute() method
-        elapsed
-    The status of the result of run() method in compute() method
-        status
-    The ProblemType status of the result of run() method in compute() method
-        status_2_pType
+  const int kErrorStatus = -1;
+/*
     
     kUnEval = 0     compute() has not been called yet
 
@@ -331,21 +212,48 @@ namespace SMSpp_di_unipi_it
 
     kLowPrecision = kError + 1   a solution found but not provably optimal
     */
-    // New Add
-    Algo * AP;
-    GR digraph;
-    V* value;
-    C* costs;
-    typedef typename TR::Heap heap;
-    typedef TR traits;
-    std::time_t timer;
-    std::time_t elapsed;
-    int status = UNSOLVED;
-    Algo::ProblemType status_2_pType;
-    /*--------------------------------------------------------------------------*/
 
-    /*
-    intMaxIter = 0     maximum iterations for the next call to solve()
+/** @} ---------------------------------------------------------------------*/
+/*-------------- CONSTRUCTING AND DESTRUCTING MCFLemonSolver ---------------*/
+/*--------------------------------------------------------------------------*/
+/** @name Constructing and destructing MCFLemonSolver
+ *  @{ */
+
+ /// constructor: does nothing special
+ /** Void constructor: does nothing special, except verifying the template
+  * arguments. */
+
+ MCFLemonSolver( void ) : CDASolver() {
+
+  f_algo = NULL;
+ /* static_assert( std::is_same< Algo< GR , V , C > ,
+                               SMSppCapacityScaling< GR , V , C > >::value ||
+		 std::is_same< Algo< GR , V , C > ,
+                               SMSppCostScaling< GR , V , C >::value     ||
+		 std::is_same< Algo< GR , V , C > ,
+                               CycleCanceling< GR , V , C > >::value       ||
+		 std::is_same< Algo< GR , V , C > ,
+		               NetworkSimplex< GR , V , C > >::value ,
+		 "Algo must be one of the LEMON algorithms");
+  */
+  }
+
+ 
+ 
+ Algo< GR , V , C > * f_algo;  //Algorithm used by lemon
+
+ GR digraph;  //Rapresentation of directed graph
+ V* value;   //Type of value of node
+ C* costs;  //Type of costs of arcs
+
+ int status = UNSOLVED;  //Variable used in compute function for getting status
+ typename Algo< GR , V , C >::ProblemType status_2_pType;
+ //Status of compute() method
+ 
+ double ticks;  //Elaped time in ticks for compute() method
+
+/*--------------------------------------------------------------------------*/
+ /* intMaxIter = 0     maximum iterations for the next call to solve()
 
     intMaxSol          maximum number of different solutions to report
 
@@ -356,10 +264,8 @@ namespace SMSpp_di_unipi_it
     intLastParCDAS     first allowed parameter value for derived classes
     */
 
-    /*--------------------------------------------------------------------------*/
-
-    /*
-    dblMaxTime = 0    maximum time for the next call to solve()
+/*--------------------------------------------------------------------------*/
+ /* dblMaxTime = 0    maximum time for the next call to solve()
 
     dblRelAcc         relative accuracy for declaring a solution optimal
 
@@ -384,131 +290,98 @@ namespace SMSpp_di_unipi_it
     dblLastParCDAS      first allowed parameter value for derived classes
     */
 
-    /*--------------------------------------------------------------------------*/
-    /// public enum "extending" int_par_type_CDAS to MCFSolver
+/*--------------------------------------------------------------------------*/
+ /// public enum "extending" int_par_type_CDAS to MCFSolver
 
-    enum int_par_type_MCFS
-    {
-      kReopt = intLastParCDAS, ///< whether or not to reoptimize
-      intLastParMCF            ///< first allowed parameter value for derived classes
-                               /**< convenience value for easily allow derived classes
-                                * to further extend the set of types of return codes */
-    };                         // end( int_par_type_MCFS )
+ enum int_par_type_MCFS {
+  kReopt = intLastParCDAS, ///< whether or not to reoptimize
+  intLastParMCF       ///< first allowed parameter value for derived classes
+                      /**< convenience value for easily allow derived classes
+		       * to further extend the set of types of return codes */
+  };  // end( int_par_type_MCFS )
 
-    /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-    /// public enum "extending" dbl_par_type_CDAS to MCFSolver
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+ /// public enum "extending" dbl_par_type_CDAS to MCFSolver
 
-    enum dbl_par_type_MCFS
-    {
-      dblLastParMCF = dblLastParCDAS
-      ///< first allowed parameter value for derived classes
-      /**< convenience value for easily allow derived classes
-       * to further extend the set of types of return codes */
-    }; // end( dbl_par_type_MCFS )
+ enum dbl_par_type_MCFS {
+  dblLastParMCF = dblLastParCDAS
+  ///< first allowed parameter value for derived classes
+  /**< convenience value for easily allow derived classes
+   * to further extend the set of types of return codes */
+  };  // end( dbl_par_type_MCFS )
 
-    /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-    /// public enum "extending" str_par_type_CDAS to MCFSolver
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+ /// public enum "extending" str_par_type_CDAS to MCFSolver
 
-    enum str_par_type_MCFS
-    {
-      strDMXFile = strLastParCDAS, ///< DMX filename to output the instance
-      strLastParMCF                ///< first allowed parameter value for derived classes
-                                   /**< convenience value for easily allow derived classes
-                                    * to further extend the set of types of return codes */
-    };                             // end( dbl_par_type_MCFS )
+ enum str_par_type_MCFS {
+  strDMXFile = strLastParCDAS, ///< DMX filename to output the instance
+  strLastParMCF        ///< first allowed parameter value for derived classes
+                       /**< convenience value for easily allow derived classes
+			* to further extend the set of types of return codes */
+  };  // end( dbl_par_type_MCFS )
 
-    /// public enum for the type of the solution
+ /// public enum for the type of the solution
 
-    enum sol_type
-    {
-      UNSOLVED //= NULL, ///< the problem has not been solved yet
-      OPTIMAL,           ///< the problem has been solved
-      KSTOPTIME //= NULL,     ///< the problem has been stopped because of time limit
-      INFEASIBLE,   ///< the problem is provably infeasible
-      UNBOUNDED,    ///< the problem is provably unbounded
-      KERROR //= NULL         ///< the problem has been stopped because of unrecoverable error
-    };               // end( sol_type )
+ enum sol_type
+ {
+  UNSOLVED, //= NULL, ///< the problem has not been solved yet
+  OPTIMAL,           ///< the problem has been solved
+  KSTOPTIME, //= NULL,     ///< the problem has been stopped because of time limit
+  INFEASIBLE,   ///< the problem is provably infeasible
+  UNBOUNDED,    ///< the problem is provably unbounded
+  KERROR //= NULL         ///< the problem has been stopped because of unrecoverable error
+  };               // end( sol_type )
 
-    /** @} ---------------------------------------------------------------------*/
-    /*----------------- CONSTRUCTING AND DESTRUCTING MCFSolver -----------------*/
-    /*--------------------------------------------------------------------------*/
-    /** @name Constructing and destructing MCFSolver
-     *  @{ */
+/** @} ---------------------------------------------------------------------*/
+/*-------------------------- OTHER INITIALIZATIONS -------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @name Other initializations
+ *
+ * Parameter-wise, MCFSolver maps the parameters of [CDA]Solver
+ *
+ *  intMaxIter = 0    maximum iterations for the next call to solve()
+ *  intMaxSol         maximum number of different solutions to report
+ *  intLogVerb        "verbosity" of the log
+ *  intMaxDSol        maximum number of different dual solutions
+ *
+ *  dblMaxTime = 0    maximum time for the next call to solve()
+ *  dblRelAcc         relative accuracy for declaring a solution optimal
+ *  dblAbsAcc         absolute accuracy for declaring a solution optimal
+ *  dblUpCutOff       upper cutoff for stopping the algorithm
+ *  dblLwCutOff       lower cutoff for stopping the algorithm
+ *  dblRAccSol        maximum relative error in any reported solution
+ *  dblAAccSol        maximum absolute error in any reported solution
+ *  dblFAccSol        maximum constraint violation in any reported solution
+ *  dblRAccDSol       maximum relative error in any dual solution
+ *  dblAAccDSol       maximum absolute error in any dual solution
+ *  dblFAccDSol       maximum absolute error in any dual solution
+ *
+ * into the parameter of MCFClass
+ *
+ * kMaxTime = 0       max time
+ * kMaxIter           max number of iteration
+ * kEpsFlw            tolerance for flows
+ * kEpsDfct           tolerance for deficits
+ * kEpsCst            tolerance for costs
+ *
+ * It then "extends" them, using
+ *
+ *  intLastParCDAS    first allowed parameter value for derived classes
+ *  dblLastParCDAS    first allowed parameter value for derived classes
+ *
+ * In particular, one now has
+ *
+ * intLastParCDAS ==> kReopt             whether or not to reoptimize
+ *
+ * and any other parameter of specific :MCFClass following. This is done
+ * via the two const static arrays Solver_2_MCFClass_int and
+ * Solver_2_MCFClass_dbl, with a negative entry meaning "there is no such
+ * parameter in MCFSolver".
+ *
+ *  @{ */
 
-    /// constructor: does nothing special
-    /** Void constructor: does nothing special, except verifying that the
-     * template argument derives from MCFClass. */
-    //TODO : Add a static_assert to check if Algo is derived from the right class(WHICH CLASS?). DONE
-    //TODO : Add a static_assert to check if GR, V and C are the right types. DONE
-    //TODO : Add a control to ensure that GR is a supported graph type for MCFBlock. 
-    MCFLemonSolver(void) : CDASolver(), Algo(digraph)
-    {
-      AP = NULL;
-      static_assert(std::is_base_of<CapacityScaling, Algo>::value || std::is_base_of<CostScaling, Algo>::value
-                    std::is_base_of<CycleCanceling, Algo>::value || std::is_base_of<NetworkSimplex, Algo>::value,
-                    "MCFLemonSolver: Algo must inherit from CapacityScaling | CostScaling | CycleCanceling | NetworkSimplex");
-      static_assert(std::is_base_of<Graph, GR>::value,
-                    "MCFLemonSolver: GR must inherit from Graph");
-      static_assert(std::is_same<V, C>::value,
-                    "MCFLemonSolver: V and C must be the same type");
-    }
-
-    /*--------------------------------------------------------------------------*/
-    /// destructor: it has to release all the Modifications
-
-    virtual ~MCFLemonSolver() {}
-
-    /** @} ---------------------------------------------------------------------*/
-    /*-------------------------- OTHER INITIALIZATIONS -------------------------*/
-    /*--------------------------------------------------------------------------*/
-    /** @name Other initializations
-     *
-     * Parameter-wise, MCFSolver maps the parameters of [CDA]Solver
-     *
-     *  intMaxIter = 0    maximum iterations for the next call to solve()
-     *  intMaxSol         maximum number of different solutions to report
-     *  intLogVerb        "verbosity" of the log
-     *  intMaxDSol        maximum number of different dual solutions
-     *
-     *  dblMaxTime = 0    maximum time for the next call to solve()
-     *  dblRelAcc         relative accuracy for declaring a solution optimal
-     *  dblAbsAcc         absolute accuracy for declaring a solution optimal
-     *  dblUpCutOff       upper cutoff for stopping the algorithm
-     *  dblLwCutOff       lower cutoff for stopping the algorithm
-     *  dblRAccSol        maximum relative error in any reported solution
-     *  dblAAccSol        maximum absolute error in any reported solution
-     *  dblFAccSol        maximum constraint violation in any reported solution
-     *  dblRAccDSol       maximum relative error in any dual solution
-     *  dblAAccDSol       maximum absolute error in any dual solution
-     *  dblFAccDSol       maximum absolute error in any dual solution
-     *
-     * into the parameter of MCFClass
-     *
-     * kMaxTime = 0       max time
-     * kMaxIter           max number of iteration
-     * kEpsFlw            tolerance for flows
-     * kEpsDfct           tolerance for deficits
-     * kEpsCst            tolerance for costs
-     *
-     * It then "extends" them, using
-     *
-     *  intLastParCDAS    first allowed parameter value for derived classes
-     *  dblLastParCDAS    first allowed parameter value for derived classes
-     *
-     * In particular, one now has
-     *
-     * intLastParCDAS ==> kReopt             whether or not to reoptimize
-     *
-     * and any other parameter of specific :MCFClass following. This is done
-     * via the two const static arrays Solver_2_MCFClass_int and
-     * Solver_2_MCFClass_dbl, with a negative entry meaning "there is no such
-     * parameter in MCFSolver".
-     *
-     *  @{ */
-
-    /// set the (pointer to the) Block that the Solver has to solve
-
-    void set_Block(Block *block) override
+ /// set the (pointer to the) Block that the Solver has to solve
+ void set_Block(Block *block) override
     {
       if (block == f_Block) // actually doing nothing
         return;             // cowardly and silently return
@@ -531,69 +404,72 @@ namespace SMSpp_di_unipi_it
         // TODO: convert array from MCFB functions to Map for Algo functions.
 
 
-        digraph::reserveNode(MCFB->get_MaxNNodes());
-        digraph::reserveArc(MCFB->get_MaxNArcs());
+        digraph.reserveNode(MCFB->get_MaxNNodes());
+        digraph.reserveArc(MCFB->get_MaxNArcs());
 
         for(int i = 0; i < MCFB->get_NNodes();i++){
-          digraph->addNode(new Node());
+          //Digraph::Node n;
+          digraph.addNode();    
         }
 
         for(int i = 0; i < MCFB->get_NArcs(); i++){
-          digraph->addArc(digraph.nodeFromId(MCFB->get_SN(i)), digraph.nodeFromId(MCFB->get_EN(i)));
+          digraph.addArc(digraph.nodeFromId(MCFB->get_SN(i)), digraph.nodeFromId(MCFB->get_EN(i)));
         }
 
         auto dgp = new GR;
 
-        auto MCFB = static_cast< MCFBlock * >( f_block );
-
         dgp->reserveNode( MCFB->get_MaxNNodes() );
         auto n = MCFB->get_NNodes();
 
-        for( Index i = 0; i < n; ++i)
+        for( MCFBlock::Index i = 0; i < n; ++i)
           dgp->addNode();
 
         dgp->reserveArc( MCFB->get_MaxNArcs() );
         auto m = MCFB->get_NArcs();
 
-        c_Subset & sn = MCFB->get_SN();
-        c_Subset & en = MCFB->get_EN();
+        MCFBlock::c_Subset & sn = MCFB->get_SN();
+        MCFBlock::c_Subset & en = MCFB->get_EN();
 
-        for( Index i = 0; i < m; ++i){
-          dgp->addArc( nodeFromId( sn[i] ), nodeFromId( en[i] ));
+        for( MCFBlock::Index i = 0; i < m; ++i){
+          dgp->addArc( digraph.nodeFromId( sn[i] ), digraph.nodeFromId( en[i] ));
         }
         
         
-        AP = new Algo(*dgp);
+        f_algo = new Algo< GR , V, C >(*dgp);
+
+        using MCFArcMapV = typename GR::template ArcMap< V >;
+        using MCFNodeMapV = typename GR::template NodeMap< V >;
 
         if(!MCFB->get_U().empty())
         {
-          ArcMap< V > um(*dgp);
-          c_Vec_FNumber & u = MCFB->get_U();
-          for( Index i = 0; i < m; ++i){
+          MCFArcMapV um(*dgp);
+          MCFBlock::c_Vec_FNumber & u = MCFB->get_U();
+          for( MCFBlock::Index i = 0; i < m; ++i){
           um.set( dgp->arcFromId(i), u[i]);
           }
-          AP->upperMap(um);
+          f_algo->upperMap(um);
         }
 
         if(!MCFB->get_C().empty())
         {
-          ArcMap< C > cm(*dgp);
-          c_Vec_FNumber & c = MCFB->get_C();
-          for( Index i = 0; i < m; ++i){
+          MCFArcMapV cm(*dgp);
+          MCFBlock::c_Vec_FNumber & c = MCFB->get_C();
+          for( MCFBlock::Index i = 0; i < m; ++i){
             cm.set( dgp->arcFromId(i), c[i]);
           }
-          AP->costMap(cm);
+          f_algo->costMap(cm);
 
         }
 
         if(!MCFB->get_B().empty())
         {
-          ArcMap< V > bm(*dgp);
-          c_Vec_FNumber & c = MCFB->get_B();
-          for( Index i = 0; i < m; ++i){
-            bm.set( dgp->arcFromId(i), -b[i]);
+
+          MCFNodeMapV bm(*dgp);
+          MCFBlock::c_Vec_FNumber & b = MCFB->get_B();
+          for( MCFBlock::Index i = 0; i < m; ++i){
+            bm.set( dgp->nodeFromId(i), -b[i]);
           }
-          AP->supplyMap(bm);
+          f_algo->supplyMap(bm);
 
         }
 
@@ -622,28 +498,29 @@ namespace SMSpp_di_unipi_it
     // virtual void set_log( std::ostream *log_stream = nullptr ) override;
 
     /*--------------------------------------------------------------------------*/
-    //TODO: change MCFC function to Algo function.
+    /* //TODO: change MCFC function to Algo function.
     void set_par(idx_type par, int value) override
     {
       if (Solver_2_MCFClass_int[par] >= 0)
         MCFC::SetPar(Solver_2_MCFClass_int[par], int(value));
     }
-
+    */
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-    //TODO: change MCFC function to Algo function.
+    /*//TODO: change MCFC function to Algo function.
     void set_par(idx_type par, double value) override
     {
       if (Solver_2_MCFClass_dbl[par] >= 0)
         MCFC::SetPar(Solver_2_MCFClass_dbl[par], double(value));
     }
-
+    */
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     void set_par(idx_type par, const std::string &value) override
     {
       if (par == strDMXFile)
         f_dmx_file = value;
     }
+    
 
     /** @} ---------------------------------------------------------------------*/
     /*--------------------- METHODS FOR SOLVING THE Block ----------------------*/
@@ -657,8 +534,8 @@ namespace SMSpp_di_unipi_it
       //TODO: map errors from Algo to MCFSolver. DONE
       //TODO: resolve for NULL values in LemonStatus_2_MCFstatus.
       const static std::array<int, 6> LemonStatus_2_MCFstatus = {
-        NULL, ProblemType::OPTIMAL, NULL, ProblemType::INFEASIBLE,
-        ProblemType::UNBOUNDED, NULL};
+        kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+        UNBOUNDED, kErrorStatus};
       
       const static std::array<int, 6> MCFstatus_2_sol_type = {
           kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
@@ -675,7 +552,7 @@ namespace SMSpp_di_unipi_it
 
       // while [read_]locked, process any outstanding Modification
       //TODO: ensure that modification are actually processed for MCFLemonSolver.
-      process_outstanding_Modification();
+      //process_outstanding_Modification();
 
       if (!f_dmx_file.empty())
       { // if so required
@@ -684,7 +561,8 @@ namespace SMSpp_di_unipi_it
         if (!ProbFile.is_open())
           throw(std::logic_error("cannot open DMX file " + f_dmx_file));
 
-        WriteMCF(ProbFile);
+        //WriteMCF(ProbFile);
+        writeDimacsMat(ProbFile, digraph);
         ProbFile.close();
       }
 
@@ -693,17 +571,28 @@ namespace SMSpp_di_unipi_it
 
       // ensure the timer exists (or reset it)
       //TODO: implement timer with ctime. feature not present in Algo.
-      time(&this->timer);
+      
       //this->MCFC::SetMCFTime();
 
       // then (try to) solve the MCF
       //TODO: change MCFC function to Algo function. DONE
       //Probably running the method run of the Algo class. DONE
 
-      //this->MCFC::SolveMCF();
-      this->status = this->Algo::run();
+      auto start = chrono::system_clock::now();
 
-      this->elapsed = time(0) - this->timer;
+      //this->MCFC::SolveMCF();
+      this->status = f_algo->run();
+
+      auto end = chrono::system_clock::now();
+
+      chrono::duration< double > elapsed = end - start;
+      ticks = elapsed.count();
+      int status = this->get_status();
+      if(LemonStatus_2_MCFstatus[status] == kErrorStatus){
+        return Solver::kError;
+      }
+
+      
 
       unlock(); // release self-lock
 
@@ -712,7 +601,7 @@ namespace SMSpp_di_unipi_it
       // hence the returned status has to be shifted by + 1
       //TODO: change MCFC function to Algo function.
       //Da rivedere, this->get_status() potrebbe non essere corretta.
-      return (MCFstatus_2_sol_type[this->get_status()]);
+      return (MCFstatus_2_sol_type[status]);
     }
 
     /** @} ---------------------------------------------------------------------*/
@@ -724,39 +613,37 @@ namespace SMSpp_di_unipi_it
     
 
 
-    int get_status(void) const override
+    int get_status(void) const 
     {
       return (this->status);
     }
 
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-    //TODO: change MCFC function to ALgo function
     double get_elapsed_time(void) const override
     {
-      return (this->MCFC::TimeMCF());
+      return (this->ticks);
     }
 
-    /*--------------------------------------------------------------------------*/
-    //TODO: change MCFC function to Algo function.
 
-    OFValue get_lb(void) override { return (this->MCFC::MCFGetDFO()); }
+
+    /*--------------------------------------------------------------------------*/
+    //Return the lower bound solution(optimal) for the problem
+    OFValue get_lb(void) override { return OFValue(f_algo->totalCost()); }
 
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-    //TODO: change MCFC function to Algo function.
-
-    OFValue get_ub(void) override { return (this->MCFC::MCFGetFO()); }
+    //Return the upper bound solution(optimal) for the problem
+    OFValue get_ub(void) override { return OFValue(f_algo->totalCost()); }
 
     /*--------------------------------------------------------------------------*/
     //TODO: change MCFC function to Algo function. DONE
     bool has_var_solution(void) override
     {
-      switch (this->get_status())
-      {
-      case (Algo::ProblemType::OPTIMAL):
-      case (Algo::ProblemType::UNBOUNDED):  
-        return (true);
+     switch (this->get_status()) {
+      case( Algo< GR , V , C >::ProblemType::OPTIMAL ):
+      case( Algo< GR , V , C >::ProblemType::UNBOUNDED ):  
+       return( true );
       default:
-        return (false);
+       return( false );
       }
     }
 
@@ -764,13 +651,12 @@ namespace SMSpp_di_unipi_it
     //TODO: change MCFC function to Algo function.
     bool has_dual_solution(void) override
     {
-      switch (this->get_status())
-      {
-      case (Algo::ProblemType::OPTIMAL):
-      case (Algo::ProblemType::UNFEASIBLE):
-        return (true);
+     switch( this->get_status() ) {
+      case( Algo< GR , V , C >::ProblemType::OPTIMAL ):
+      case( Algo< GR , V , C >::ProblemType::INFEASIBLE ):
+       return( true );
       default:
-        return (false);
+       return( false );
       }
     }
 
@@ -791,7 +677,7 @@ namespace SMSpp_di_unipi_it
      * solution". In all other cases, the flow solution is saved. */
 
     void get_var_solution(Configuration *solc = nullptr) override
-    {
+    {/*
       if (!f_Block) // no [MCF]Block to write to
         return;     // cowardly and silently return
 
@@ -803,8 +689,8 @@ namespace SMSpp_di_unipi_it
       MCFBlock::Vec_FNumber X(MCFB->get_NArcs());
       this->MCFGetX(X.data());
       MCFB->set_x(X.begin());
-    }
-
+   */}
+  
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
     /// write the "current" dual solution in the Constraint of the MCFBlock
     /** Write the "current" dual solution, i.e., node potentials and flow
@@ -816,10 +702,10 @@ namespace SMSpp_di_unipi_it
      * a SimpleConfiguration< int >, and solc->f_value == 1, then *nothing is
      * done*, since the Configuration is meant to say "only save/map the primal
      * solution". In all other cases, the flow solution is saved. */
-
+    
     void get_dual_solution(Configuration *solc = nullptr) override
     {
-      if (!f_Block) // no [MCF]Block to write to
+    /*  if (!f_Block) // no [MCF]Block to write to
         return;     // cowardly and silently return
 
       auto tsolc = dynamic_cast<SimpleConfiguration<int> *>(solc);
@@ -834,15 +720,15 @@ namespace SMSpp_di_unipi_it
       MCFBlock::Vec_FNumber RC(MCFB->get_NArcs());
       this->MCFGetRC(RC.data());
       MCFB->set_rc(RC.begin());
-    }
-
+    */}
+    
     /*--------------------------------------------------------------------------*/
 
-    bool new_var_solution(void) override { return (this->HaveNewX()); }
+   // bool new_var_solution(void) override { return (this->HaveNewX()); }
 
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 
-    bool new_dual_solution(void) override { return (this->HaveNewPi()); }
+   // bool new_dual_solution(void) override { return (this->HaveNewPi()); }
 
     /*--------------------------------------------------------------------------*/
     /*
@@ -933,25 +819,7 @@ namespace SMSpp_di_unipi_it
      *
      * of the base (private) MCFClass public, so that it can be freely used. */
     //TODO: change MCFC function to Algo function.
-    using MCFC::WriteMCF;
-
-  /*--------------------------------------------------------------------------*/
-  /*------------------- METHODS UTILS ----------------------------------------*/
-  /*--------------------------------------------------------------------------*/
-    //to review
-    //Method for converting a 2D array to a map.
-    //TODO: Return an ArcMap<K, V>.
-    //TODO: Make another func for NodeMap<K, V>
-    template<typename V, int N>
-    map<V, V> array_to_map(T(& a)[N][2])
-    {
-      map<V, V> result;
-      std::transform(
-        a, a+N, std::inserter(result, result.begin()),
-        [](V const(&p)[2]) { return std::make_pair(p[0], p[1]); }
-      );
-    }
-
+    //using MCFC::WriteMCF;
 
     /*--------------------------------------------------------------------------*/
     /*------------------- METHODS FOR HANDLING THE PARAMETERS ------------------*/
@@ -968,43 +836,43 @@ namespace SMSpp_di_unipi_it
 
 
     [[nodiscard]] idx_type get_num_int_par(void) const override
-    {
+    {/*
       return (CDASolver::get_num_int_par() + 1);
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] idx_type get_num_dbl_par(void) const override
-    {
+    {/*
       return (CDASolver::get_num_dbl_par());
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] idx_type get_num_str_par(void) const override
-    {
+    {/*
       return (CDASolver::get_num_str_par() + 1);
-    }
-
+    */}
+    
     /*--------------------------------------------------------------------------*/
-
+    
     [[nodiscard]] int get_dflt_int_par(idx_type par) const override
-    {
+    {/*
       if (par == intLastParCDAS)
         return (MCFClass::kYes);
 
       return (CDASolver::get_dflt_int_par(par));
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] double get_dflt_dbl_par(idx_type par) const override
-    {
+    {/*
       return (CDASolver::get_dflt_dbl_par(par));
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] const std::string &get_dflt_str_par(idx_type par)
         const override
     {
@@ -1014,11 +882,11 @@ namespace SMSpp_di_unipi_it
 
       return (CDASolver::get_dflt_str_par(par));
     }
-
+    
     /*--------------------------------------------------------------------------*/
-
+    
     [[nodiscard]] int get_int_par(idx_type par) const override
-    {
+    {/*
       if (Solver_2_MCFClass_int[par] >= 0)
       {
         int val;
@@ -1027,12 +895,12 @@ namespace SMSpp_di_unipi_it
       }
 
       return (get_dflt_int_par(par));
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] double get_dbl_par(idx_type par) const override
-    {
+    {/*
       if (Solver_2_MCFClass_dbl[par] >= 0)
       {
         double val;
@@ -1041,10 +909,10 @@ namespace SMSpp_di_unipi_it
       }
 
       return (get_dflt_dbl_par(par));
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] const std::string &get_str_par(idx_type par)
         const override
     {
@@ -1053,70 +921,71 @@ namespace SMSpp_di_unipi_it
 
       return (get_dflt_str_par(par));
     }
-
+    
     /*--------------------------------------------------------------------------*/
-
+    
     [[nodiscard]] idx_type int_par_str2idx(const std::string &name)
         const override
-    {
+    {/*
       if (name == "kReopt")
         return (kReopt);
 
       return (CDASolver::int_par_str2idx(name));
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] idx_type dbl_par_str2idx(const std::string &name)
         const override
-    {
+    {/*
       return (CDASolver::dbl_par_str2idx(name));
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] idx_type str_par_str2idx(const std::string &name)
         const override
-    {
+    {/*
       if (name == "strDMXFile")
         return (strDMXFile);
 
       return (CDASolver::str_par_str2idx(name));
-    }
-
+    */}
+    
     /*--------------------------------------------------------------------------*/
-
+    
     [[nodiscard]] const std::string &int_par_idx2str(idx_type idx)
         const override
-    {
+    {/*
       static const std::string my_name = "kReopt";
 
       if (idx == intLastParCDAS)
         return (my_name);
 
       return (CDASolver::int_par_idx2str(idx));
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] const std::string &dbl_par_idx2str(idx_type idx)
         const override
-    {
+    {/*
       return (CDASolver::dbl_par_idx2str(idx));
-    }
-
+    */}
+    
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-
+    
     [[nodiscard]] const std::string &str_par_idx2str(idx_type idx)
         const override
-    {
+    {/*
       static const std::string my_name = "strDMXFile";
 
       if (idx == strDMXFile)
         return (my_name);
 
       return (CDASolver::str_par_idx2str(idx));
-    }
+    */}
+    
 
     /** @} ---------------------------------------------------------------------*/
     /*------------ METHODS FOR HANDLING THE State OF THE MCFLemonSolver -------------*/
@@ -1124,15 +993,15 @@ namespace SMSpp_di_unipi_it
     /** @name Handling the State of the MCFSolver
      *  @{ */
 
-    [[nodiscard]] State *get_State(void) const override;
+    //[[nodiscard]] State *get_State(void) const override;
 
     /*--------------------------------------------------------------------------*/
 
-    void put_State(const State &state) override;
+    //void put_State(const State &state) override;
 
     /*--------------------------------------------------------------------------*/
 
-    void put_State(State &&state) override;
+    //void put_State(State &&state) override;
 
     /** @} ---------------------------------------------------------------------*/
     /*------------- METHODS FOR ADDING / REMOVING / CHANGING DATA --------------*/
@@ -1162,7 +1031,7 @@ namespace SMSpp_di_unipi_it
      * MCFBlock: then, this MCFBlock may be copied from a MCFBlock that has
      * closed or deleted arcs and this method would not work. */
 
-    void add_Modification(sp_Mod &mod) override
+    /*void add_Modification(sp_Mod &mod) override
     {
       if (std::dynamic_pointer_cast<const NBModification>(mod))
       {
@@ -1189,13 +1058,13 @@ namespace SMSpp_di_unipi_it
       }
       else
         push_back(mod);
-    }
+    }*/
 
     /*--------------------------------------------------------------------------*/
     /*-------------------------------- FRIENDS ---------------------------------*/
     /*--------------------------------------------------------------------------*/
 
-    friend class MCFSolverState; // make MCFSolverState friend
+    friend class MCFLemonState; // make MCFSolverState friend
 
     /** @} ---------------------------------------------------------------------*/
     /*--------------------- PROTECTED PART OF THE CLASS ------------------------*/
@@ -1245,7 +1114,7 @@ namespace SMSpp_di_unipi_it
    *  i.e., a MCFClass::MCFState (*). Since MCFClass::MCFState does not allow
    *  serialization, all that part does not work.  */
 
-  class MCFSolverState : public State
+  class MCFLemonState : public State
   {
     /*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
 
@@ -1264,25 +1133,25 @@ namespace SMSpp_di_unipi_it
      *       since every MCFSolver derives from a :MCFClass and we only need
      *       access to MCFGetState(). */
 
-    MCFSolverState(MCFClass *mcfc = nullptr) : State()
+    /*MCFSolverState(MCFClass *mcfc = nullptr) : State()
     {
       f_state = mcfc ? mcfc->MCFGetState() : nullptr;
-    }
+    }*/
 
     /*--------------------------------------------------------------------------*/
     /// de-serialize a MCFSolverState out of netCDF::NcGroup
     /** Should de-serialize a MCFSolverState out of netCDF::NcGroup, but in
      * fact it does not work. */
 
-    void deserialize(const netCDF::NcGroup &group) override
+    /*void deserialize(const netCDF::NcGroup &group) override
     {
       f_state = nullptr;
-    }
+    }*/
 
     /*--------------------------------------------------------------------------*/
     /// destructor
 
-    virtual ~MCFSolverState() { delete f_state; }
+    //virtual ~MCFSolverState() { delete f_state; }
 
     /*---------- METHODS DESCRIBING THE BEHAVIOR OF A MCFSolverState -----------*/
 
@@ -1310,7 +1179,7 @@ namespace SMSpp_di_unipi_it
 
     /*--------------------------- PROTECTED FIELDS -----------------------------*/
 
-    MCFClass::MCFStatePtr f_state; ///< the (pointer to) MCFState
+   // MCFClass::MCFStatePtr f_state; ///< the (pointer to) MCFState
 
     /*---------------------- PRIVATE PART OF THE CLASS -------------------------*/
 
@@ -1328,37 +1197,37 @@ namespace SMSpp_di_unipi_it
   /*------------------- inline methods implementation ------------------------*/
   /*--------------------------------------------------------------------------*/
   //TODO: change MCFC function to Algo function.
-  template <class Algo>
+  /*template <class Algo>
   State *MCFSolver<Algo>::get_State(void) const
   {
     return (new MCFSolverState(const_cast<MCFSolver<MCFC> *>(this)));
-  }
+  }*/
 
   /*--------------------------------------------------------------------------*/
   //TODO: change MCFC function to Algo function.
-  template <class Algo>>
+  /*template <class Algo>
   void MCFSolver<Algo>::put_State(const State &state)
   {
     // if state is not a const MCFSolverState &, exception will be thrown
     auto s = dynamic_cast<const MCFSolverState &>(state);
 
     this->MCFPutState(s.f_state);
-  }
+  }*/
 
   /*--------------------------------------------------------------------------*/
   //TODO: change MCFC function to Algo function.
-  template <class Algo>
+  /*template <class Algo>
   void MCFSolver<Algo>::put_State(State &&state)
   {
     // if state is not a MCFSolverState &&, exception will be thrown
     auto s = dynamic_cast<MCFSolverState &&>(state);
 
     this->MCFPutState(s.f_state);
-  }
+  }*/
 
   /*--------------------------------------------------------------------------*/
   //TODO: change MCFC function to Algo function.
-  template <class Algo>
+  /*template <class Algo>
   void MCFSolver<Algo>::process_outstanding_Modification(void)
   {
     // no-frills loop: do them in order, with no attempt at optimizing
@@ -1373,15 +1242,15 @@ namespace SMSpp_di_unipi_it
 
       guts_of_poM(mod.get());
     }
-  } // end( MCFSolver::process_outstanding_Modification )
+  }*/ // end( MCFSolver::process_outstanding_Modification )
 
   /*--------------------------------------------------------------------------*/
 
-  template <class Algo>
+  /*template <class Algo>
   void MCFSolver<Algo>::guts_of_poM(c_p_Mod mod)
   {
     auto MCFB = static_cast<MCFBlock *>(f_Block);
-
+    */
     // process Modification - - - - - - - - - - - - - - - - - - - - - - - - - - -
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /* This requires to patiently sift through the possible Modification types
@@ -1389,13 +1258,13 @@ namespace SMSpp_di_unipi_it
      * method of MCFClass. */
 
     // GroupModification- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    if (auto tmod = dynamic_cast<const GroupModification *>(mod))
+    /*if (auto tmod = dynamic_cast<const GroupModification *>(mod))
     {
       for (const auto &submod : tmod->sub_Modifications())
         guts_of_poM(submod.get());
 
       return;
-    }
+    }*/
 
     // MCFBlockRngdMod- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /* Note: in the following we can assume that C, B and U are nonempty. This
@@ -1403,7 +1272,7 @@ namespace SMSpp_di_unipi_it
      * loaded. But if a Modification has been issued they are no longer empty (a
      * Modification changin nothing from the "empty" state is not issued). */
 
-    if (auto tmod = dynamic_cast<const MCFBlockRngdMod *>(mod))
+    /*if (auto tmod = dynamic_cast<const MCFBlockRngdMod *>(mod))
     {
       auto rng = tmod->rng();
 
@@ -1587,7 +1456,7 @@ namespace SMSpp_di_unipi_it
     // any remaining Modification is plainly ignored, since it must be an
     // "abstract" Modification, which this Solver does not need to look at
 
-  } // end( guts_of_poM )
+  }*/ // end( guts_of_poM )
 
   /*--------------------------------------------------------------------------*/
   /*--------------------------------------------------------------------------*/
