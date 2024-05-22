@@ -32,6 +32,8 @@
 /*--------------------------------------------------------------------------*/
 
 using namespace SMSpp_di_unipi_it;
+//using NS_GRVS = NetworkSimplex< SmartDigraph, double, double >;
+
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- STATIC MEMBERS -----------------------------*/
@@ -54,6 +56,287 @@ SMSpp_insert_in_factory_cpp_0_t(
 /*--------------------------------------------------------------------------*/
 /*--------------------------------- METHODS --------------------------------*/
 /*--------------------------------------------------------------------------*/
+template<>
+template<class NetworkSimplex>
+template<class GR,  typename V,  typename C >
+int MCFLemonSolver< AlgoType::Algo_GRVC, GR, V, C >::compute( bool changedvars ) 
+{
+        const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+        kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+        UNBOUNDED, kErrorStatus};
+      
+      const static std::array<int, 6> MCFstatus_2_sol_type = {
+          kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
+          Solver::kError};
+
+      lock(); // first of all, acquire self-lock
+
+      if (!f_Block)            // there is no [MCFBlock] to solve
+        return (kBlockLocked); // return error
+
+      bool owned = f_Block->is_owned_by(f_id); // check if already locked
+      if ((!owned) && (!f_Block->read_lock())) // if not try to read_lock
+        return (kBlockLocked);                 // return error on failure
+
+      // while [read_]locked, process any outstanding Modification
+      //TODO: ensure that modification are actually processed for MCFLemonSolver.
+      //process_outstanding_Modification();
+
+      if (!f_dmx_file.empty())
+      { // if so required
+        // output the current instance (after the changes) to a DMX file
+        std::ofstream ProbFile(f_dmx_file, ios_base::out | ios_base::trunc);
+        if (!ProbFile.is_open())
+          throw(std::logic_error("cannot open DMX file " + f_dmx_file));
+
+        //WriteMCF(ProbFile);
+        writeDimacsMat(ProbFile, *dgp);
+        ProbFile.close();
+      }
+
+      if (!owned)               // if the [MCF]Block was actually read_locked
+        f_Block->read_unlock(); // read_unlock it
+
+      // then (try to) solve the MCF
+
+      auto start = chrono::system_clock::now();
+
+      if(f_pivot_rule != NULL){
+          this->status = f_algo->run(f_pivot_rule);
+      }else{
+        //Build f_pivot_rule and execute run() method
+      }
+       
+      auto end = chrono::system_clock::now();
+
+      chrono::duration< double > elapsed = end - start;
+      ticks = elapsed.count();
+
+      if(LemonStatus_2_MCFstatus[this->get_status()] == kErrorStatus){
+        return Solver::kError;
+      }
+
+      
+      
+      unlock(); // release self-lock
+
+      // now give out the result: note that the vector MCFstatus_2_sol_type[]
+      // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
+      // hence the returned status has to be shifted by + 1
+      //TODO: change MCFC function to Algo function.
+      //Da rivedere, this->get_status() potrebbe non essere corretta.
+      return (MCFstatus_2_sol_type[this->get_status()]);
+}
+
+    /// @brief partial specialization for 1st parameter CapacityScaling 
+    /// @param changedvars 
+    /// @return type of solution
+        template<GR, V, C>
+        int MCFLemonSolver<SMSppCapacityScaling>::compute( bool changedvars = true ) override
+        {
+        const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+                kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+                UNBOUNDED, kErrorStatus};
+        
+        const static std::array<int, 6> MCFstatus_2_sol_type = {
+                kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
+                Solver::kError};
+
+        lock(); // first of all, acquire self-lock
+
+        if (!f_Block)            // there is no [MCFBlock] to solve
+                return (kBlockLocked); // return error
+
+        bool owned = f_Block->is_owned_by(f_id); // check if already locked
+        if ((!owned) && (!f_Block->read_lock())) // if not try to read_lock
+                return (kBlockLocked);                 // return error on failure
+
+        // while [read_]locked, process any outstanding Modification
+        //TODO: ensure that modification are actually processed for MCFLemonSolver.
+        //process_outstanding_Modification();
+
+        if (!f_dmx_file.empty())
+        { // if so required
+                // output the current instance (after the changes) to a DMX file
+                std::ofstream ProbFile(f_dmx_file, ios_base::out | ios_base::trunc);
+                if (!ProbFile.is_open())
+                throw(std::logic_error("cannot open DMX file " + f_dmx_file));
+
+                //WriteMCF(ProbFile);
+                writeDimacsMat(ProbFile, *dgp);
+                ProbFile.close();
+        }
+
+        if (!owned)               // if the [MCF]Block was actually read_locked
+                f_Block->read_unlock(); // read_unlock it
+
+        auto start = chrono::system_clock::now();
+        //TODO: check if factor parameter needs to be changed.
+        this->status = f_algo->run();
+        
+        auto end = chrono::system_clock::now();
+
+        chrono::duration< double > elapsed = end - start;
+        ticks = elapsed.count();
+        if(LemonStatus_2_MCFstatus[this->get_status()] == kErrorStatus){
+                return Solver::kError;
+        }
+
+        
+        
+        unlock(); // release self-lock
+
+        // now give out the result: note that the vector MCFstatus_2_sol_type[]
+        // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
+        // hence the returned status has to be shifted by + 1
+        //TODO: change MCFC function to Algo function.
+        //Da rivedere, this->get_status() potrebbe non essere corretta.
+        return (MCFstatus_2_sol_type[this->get_status()]);
+        }
+
+    /// @brief partial specialization of 1st parameter for CostScaling
+    /// @param changedvars 
+    /// @return type of solution
+        template<GR, V, C>    
+        int MCFLemonSolver<SMSppCostScaling>::compute( bool changedvars = true ) override
+        {.
+        const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+                kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+                UNBOUNDED, kErrorStatus};
+        
+        const static std::array<int, 6> MCFstatus_2_sol_type = {
+                kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
+                Solver::kError};
+
+        lock(); // first of all, acquire self-lock
+
+        if (!f_Block)            // there is no [MCFBlock] to solve
+                return (kBlockLocked); // return error
+
+        bool owned = f_Block->is_owned_by(f_id); // check if already locked
+        if ((!owned) && (!f_Block->read_lock())) // if not try to read_lock
+                return (kBlockLocked);                 // return error on failure
+
+        // while [read_]locked, process any outstanding Modification
+        //TODO: ensure that modification are actually processed for MCFLemonSolver.
+        //process_outstanding_Modification();
+
+        if (!f_dmx_file.empty())
+        { // if so required
+                // output the current instance (after the changes) to a DMX file
+                std::ofstream ProbFile(f_dmx_file, ios_base::out | ios_base::trunc);
+                if (!ProbFile.is_open())
+                throw(std::logic_error("cannot open DMX file " + f_dmx_file));
+
+                //WriteMCF(ProbFile);
+                writeDimacsMat(ProbFile, *dgp);
+                ProbFile.close();
+        }
+
+        if (!owned)               // if the [MCF]Block was actually read_locked
+                f_Block->read_unlock(); // read_unlock it
+
+        auto start = chrono::system_clock::now();
+        
+        if(f_method != NULL){
+        this->status = f_algo->run(f_method);
+        }else{
+                //Build f_method and execute run() method
+        }
+        
+        auto end = chrono::system_clock::now();
+
+        chrono::duration< double > elapsed = end - start;
+        ticks = elapsed.count();
+        if(LemonStatus_2_MCFstatus[this->get_status()] == kErrorStatus){
+                return Solver::kError;
+        }
+
+        
+        
+        unlock(); // release self-lock
+
+        // now give out the result: note that the vector MCFstatus_2_sol_type[]
+        // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
+        // hence the returned status has to be shifted by + 1
+        return (MCFstatus_2_sol_type[this->get_status()]);
+        }
+
+
+    /// @brief partial specialization of 1st parameter CycleCanceling
+    /// @tparam GR 
+    /// @tparam C 
+    /// @tparam V   
+    /// @param changedvars 
+    /// @return type of solution
+        template<GR, V, C>
+        int MCFLemonSolver<CycleCanceling>::compute( bool changedvars = true ) override
+        {
+        const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+                kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+                UNBOUNDED, kErrorStatus};
+        
+        const static std::array<int, 6> MCFstatus_2_sol_type = {
+                kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
+                Solver::kError};
+
+        lock(); // first of all, acquire self-lock
+
+        if (!f_Block)            // there is no [MCFBlock] to solve
+                return (kBlockLocked); // return error
+
+        bool owned = f_Block->is_owned_by(f_id); // check if already locked
+        if ((!owned) && (!f_Block->read_lock())) // if not try to read_lock
+                return (kBlockLocked);                 // return error on failure
+
+        // while [read_]locked, process any outstanding Modification
+        //TODO: ensure that modification are actually processed for MCFLemonSolver.
+        //process_outstanding_Modification();
+
+        if (!f_dmx_file.empty())
+        { // if so required
+                // output the current instance (after the changes) to a DMX file
+                std::ofstream ProbFile(f_dmx_file, ios_base::out | ios_base::trunc);
+                if (!ProbFile.is_open())
+                throw(std::logic_error("cannot open DMX file " + f_dmx_file));
+
+                //WriteMCF(ProbFile);
+                writeDimacsMat(ProbFile, *dgp);
+                ProbFile.close();
+        }
+
+        if (!owned)               // if the [MCF]Block was actually read_locked
+                f_Block->read_unlock(); // read_unlock it
+
+        auto start = chrono::system_clock::now();
+        
+        if(f_method != NULL){
+        this->status = f_algo->run(f_method);
+        }else{
+                //Build f_method and execute run() method
+        }
+        
+        auto end = chrono::system_clock::now();
+
+        chrono::duration< double > elapsed = end - start;
+        ticks = elapsed.count();
+        int status = this->get_status();
+        if(LemonStatus_2_MCFstatus[status] == kErrorStatus){
+                return Solver::kError;
+        }
+
+        
+        
+        unlock(); // release self-lock
+
+        // now give out the result: note that the vector MCFstatus_2_sol_type[]
+        // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
+        // hence the returned status has to be shifted by + 1
+        //TODO: change MCFC function to Algo function.
+        //Da rivedere, this->get_status() potrebbe non essere corretta.
+        return (MCFstatus_2_sol_type[status]);
+        }
+
 
 /*--------------------------------------------------------------------------*/
 /* Managing parameters for MCFSimplex---------------------------------------*/
@@ -509,3 +792,4 @@ const std::string & MCFSolver< SPTree >::int_par_idx2str( idx_type idx )
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File MCFSolver.cpp ---------------------------*/
 /*--------------------------------------------------------------------------*/
+ 
