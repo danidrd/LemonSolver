@@ -30,6 +30,9 @@ These instructions will let you build MCFBlock and MCFSolver on your system.
 
 ## TODO: UPDATE
 
+###INSTALL
+Run install.sh script for install the umbrella project
+
 ### Build and install with CMake
 
 First you have to separately build LEMON with
