@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*/
-/*--------------------------- File MCFLemonSolver.cpp ---------------------------*/
+/*------------------------- File MCFLemonSolver.cpp ------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
  * Implementation of the MCFLemonSolver class.
@@ -7,109 +7,48 @@
  * \author Daniele Caliandro \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Daniele Caliandro
+ * \author Antonio Frangioni \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Daniele Caliandro, Antonio Frangioni
  */
 /*--------------------------------------------------------------------------*/
 /*---------------------------- IMPLEMENTATION ------------------------------*/
 /*--------------------------------------------------------------------------*/
 /*------------------------------- MACROS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
-/* If any of the following macros is defined, then the corresponding
- * :MCFClass solver is included and the corresponding version of
- * MCFSolver<> is defined:
- *
- * - HAVE_CSCL2      for the CS2 class
- *
- * - HAVE_CPLEX      for the MCFCplex class
- *
- * - HAVE_MFSMX      for the MCFSimplex class
- *
- * - HAVE_MFZIB      for the MCFZIB class
- *
- * - HAVE_RELAX      for the RelaxIV class
- *
- * - HAVE_SPTRE      for the SPTree class; note that SPTree cannot solve
- *                   most MCF instances, except those with SPT structure.
- */
+
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "MCFSolver.h"
+//#include <math.h>
 
-// #include "capacity_scaling.h"
-
-// #include "cost_scaling.h"
-
-// #include "cycle_canceling.h"
-
-// #include "network_simplex.h"
-
-#ifdef HAVE_CSCL2
- #include "CS2.h"
-#endif
-
-#ifdef HAVE_CPLEX
- #include "MCFCplex.h"
-#endif
-
-#ifdef HAVE_MFSMX
- #include "MCFSimplex.h"
-#endif
-
-#ifdef HAVE_MFZIB
- #include "MCFZIB.h"
-#endif
-
-#ifdef HAVE_RELAX
- #include "RelaxIV.h"
-#endif
-
-#ifdef HAVE_SPTRE
- #include "SPTree.h"
-#endif
+#include "MCFLemonSolver.h"
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- NAMESPACE AND USING ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 using namespace SMSpp_di_unipi_it;
+//using NS_GRVS = NetworkSimplex< SmartDigraph, double, double >;
+
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- STATIC MEMBERS -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// register the various MCFSolver< * > to the Solver factory
+// register the various LEMONSolver< Alg , GR , V , C > to the Solver factory
 
-#ifdef HAVE_CSCL2
- SMSpp_insert_in_factory_cpp_0_t( MCFSolver< CS2 > );
-#endif
-
-#ifdef HAVE_CPLEX
- SMSpp_insert_in_factory_cpp_0_t( MCFSolver< MCFCplex > );
-#endif
-
-#ifdef HAVE_MFSMX
- SMSpp_insert_in_factory_cpp_0_t( MCFSolver< MCFSimplex > );
-#endif
-
-#ifdef HAVE_MFZIB
- SMSpp_insert_in_factory_cpp_0_t( MCFSolver< MCFZIB > );
-#endif
-
-#ifdef HAVE_RELAX
- SMSpp_insert_in_factory_cpp_0_t( MCFSolver< RelaxIV > );
-#endif
-
-#ifdef HAVE_SPTRE
- SMSpp_insert_in_factory_cpp_0_t( MCFSolver< SPTree > );
-#endif
+SMSpp_insert_in_factory_cpp_0_t(
+ MCFLemonSolver< NetworkSimplex , SmartDigraph , double , double >);
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 
 // register MCFSolverState to the State factory
 
-SMSpp_insert_in_factory_cpp_0( MCFSolverState );
+// SMSpp_insert_in_factory_cpp_0( MCFSolverState );
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 // the various static maps
@@ -117,6 +56,287 @@ SMSpp_insert_in_factory_cpp_0( MCFSolverState );
 /*--------------------------------------------------------------------------*/
 /*--------------------------------- METHODS --------------------------------*/
 /*--------------------------------------------------------------------------*/
+template<>
+template<class NetworkSimplex>
+template<class GR,  typename V,  typename C >
+int MCFLemonSolver< AlgoType::Algo_GRVC, GR, V, C >::compute( bool changedvars ) 
+{
+        const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+        kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+        UNBOUNDED, kErrorStatus};
+      
+      const static std::array<int, 6> MCFstatus_2_sol_type = {
+          kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
+          Solver::kError};
+
+      lock(); // first of all, acquire self-lock
+
+      if (!f_Block)            // there is no [MCFBlock] to solve
+        return (kBlockLocked); // return error
+
+      bool owned = f_Block->is_owned_by(f_id); // check if already locked
+      if ((!owned) && (!f_Block->read_lock())) // if not try to read_lock
+        return (kBlockLocked);                 // return error on failure
+
+      // while [read_]locked, process any outstanding Modification
+      //TODO: ensure that modification are actually processed for MCFLemonSolver.
+      //process_outstanding_Modification();
+
+      if (!f_dmx_file.empty())
+      { // if so required
+        // output the current instance (after the changes) to a DMX file
+        std::ofstream ProbFile(f_dmx_file, ios_base::out | ios_base::trunc);
+        if (!ProbFile.is_open())
+          throw(std::logic_error("cannot open DMX file " + f_dmx_file));
+
+        //WriteMCF(ProbFile);
+        writeDimacsMat(ProbFile, *dgp);
+        ProbFile.close();
+      }
+
+      if (!owned)               // if the [MCF]Block was actually read_locked
+        f_Block->read_unlock(); // read_unlock it
+
+      // then (try to) solve the MCF
+
+      auto start = chrono::system_clock::now();
+
+      if(f_pivot_rule != NULL){
+          this->status = f_algo->run(f_pivot_rule);
+      }else{
+        //Build f_pivot_rule and execute run() method
+      }
+       
+      auto end = chrono::system_clock::now();
+
+      chrono::duration< double > elapsed = end - start;
+      ticks = elapsed.count();
+
+      if(LemonStatus_2_MCFstatus[this->get_status()] == kErrorStatus){
+        return Solver::kError;
+      }
+
+      
+      
+      unlock(); // release self-lock
+
+      // now give out the result: note that the vector MCFstatus_2_sol_type[]
+      // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
+      // hence the returned status has to be shifted by + 1
+      //TODO: change MCFC function to Algo function.
+      //Da rivedere, this->get_status() potrebbe non essere corretta.
+      return (MCFstatus_2_sol_type[this->get_status()]);
+}
+
+    /// @brief partial specialization for 1st parameter CapacityScaling 
+    /// @param changedvars 
+    /// @return type of solution
+        template<GR, V, C>
+        int MCFLemonSolver<SMSppCapacityScaling>::compute( bool changedvars = true ) override
+        {
+        const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+                kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+                UNBOUNDED, kErrorStatus};
+        
+        const static std::array<int, 6> MCFstatus_2_sol_type = {
+                kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
+                Solver::kError};
+
+        lock(); // first of all, acquire self-lock
+
+        if (!f_Block)            // there is no [MCFBlock] to solve
+                return (kBlockLocked); // return error
+
+        bool owned = f_Block->is_owned_by(f_id); // check if already locked
+        if ((!owned) && (!f_Block->read_lock())) // if not try to read_lock
+                return (kBlockLocked);                 // return error on failure
+
+        // while [read_]locked, process any outstanding Modification
+        //TODO: ensure that modification are actually processed for MCFLemonSolver.
+        //process_outstanding_Modification();
+
+        if (!f_dmx_file.empty())
+        { // if so required
+                // output the current instance (after the changes) to a DMX file
+                std::ofstream ProbFile(f_dmx_file, ios_base::out | ios_base::trunc);
+                if (!ProbFile.is_open())
+                throw(std::logic_error("cannot open DMX file " + f_dmx_file));
+
+                //WriteMCF(ProbFile);
+                writeDimacsMat(ProbFile, *dgp);
+                ProbFile.close();
+        }
+
+        if (!owned)               // if the [MCF]Block was actually read_locked
+                f_Block->read_unlock(); // read_unlock it
+
+        auto start = chrono::system_clock::now();
+        //TODO: check if factor parameter needs to be changed.
+        this->status = f_algo->run();
+        
+        auto end = chrono::system_clock::now();
+
+        chrono::duration< double > elapsed = end - start;
+        ticks = elapsed.count();
+        if(LemonStatus_2_MCFstatus[this->get_status()] == kErrorStatus){
+                return Solver::kError;
+        }
+
+        
+        
+        unlock(); // release self-lock
+
+        // now give out the result: note that the vector MCFstatus_2_sol_type[]
+        // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
+        // hence the returned status has to be shifted by + 1
+        //TODO: change MCFC function to Algo function.
+        //Da rivedere, this->get_status() potrebbe non essere corretta.
+        return (MCFstatus_2_sol_type[this->get_status()]);
+        }
+
+    /// @brief partial specialization of 1st parameter for CostScaling
+    /// @param changedvars 
+    /// @return type of solution
+        template<GR, V, C>    
+        int MCFLemonSolver<SMSppCostScaling>::compute( bool changedvars = true ) override
+        {.
+        const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+                kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+                UNBOUNDED, kErrorStatus};
+        
+        const static std::array<int, 6> MCFstatus_2_sol_type = {
+                kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
+                Solver::kError};
+
+        lock(); // first of all, acquire self-lock
+
+        if (!f_Block)            // there is no [MCFBlock] to solve
+                return (kBlockLocked); // return error
+
+        bool owned = f_Block->is_owned_by(f_id); // check if already locked
+        if ((!owned) && (!f_Block->read_lock())) // if not try to read_lock
+                return (kBlockLocked);                 // return error on failure
+
+        // while [read_]locked, process any outstanding Modification
+        //TODO: ensure that modification are actually processed for MCFLemonSolver.
+        //process_outstanding_Modification();
+
+        if (!f_dmx_file.empty())
+        { // if so required
+                // output the current instance (after the changes) to a DMX file
+                std::ofstream ProbFile(f_dmx_file, ios_base::out | ios_base::trunc);
+                if (!ProbFile.is_open())
+                throw(std::logic_error("cannot open DMX file " + f_dmx_file));
+
+                //WriteMCF(ProbFile);
+                writeDimacsMat(ProbFile, *dgp);
+                ProbFile.close();
+        }
+
+        if (!owned)               // if the [MCF]Block was actually read_locked
+                f_Block->read_unlock(); // read_unlock it
+
+        auto start = chrono::system_clock::now();
+        
+        if(f_method != NULL){
+        this->status = f_algo->run(f_method);
+        }else{
+                //Build f_method and execute run() method
+        }
+        
+        auto end = chrono::system_clock::now();
+
+        chrono::duration< double > elapsed = end - start;
+        ticks = elapsed.count();
+        if(LemonStatus_2_MCFstatus[this->get_status()] == kErrorStatus){
+                return Solver::kError;
+        }
+
+        
+        
+        unlock(); // release self-lock
+
+        // now give out the result: note that the vector MCFstatus_2_sol_type[]
+        // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
+        // hence the returned status has to be shifted by + 1
+        return (MCFstatus_2_sol_type[this->get_status()]);
+        }
+
+
+    /// @brief partial specialization of 1st parameter CycleCanceling
+    /// @tparam GR 
+    /// @tparam C 
+    /// @tparam V   
+    /// @param changedvars 
+    /// @return type of solution
+        template<GR, V, C>
+        int MCFLemonSolver<CycleCanceling>::compute( bool changedvars = true ) override
+        {
+        const static std::array<int, 6> LemonStatus_2_MCFstatus = {
+                kErrorStatus, OPTIMAL, kErrorStatus , INFEASIBLE,
+                UNBOUNDED, kErrorStatus};
+        
+        const static std::array<int, 6> MCFstatus_2_sol_type = {
+                kUnEval, Solver::kOK, kStopTime, kInfeasible, Solver::kUnbounded,
+                Solver::kError};
+
+        lock(); // first of all, acquire self-lock
+
+        if (!f_Block)            // there is no [MCFBlock] to solve
+                return (kBlockLocked); // return error
+
+        bool owned = f_Block->is_owned_by(f_id); // check if already locked
+        if ((!owned) && (!f_Block->read_lock())) // if not try to read_lock
+                return (kBlockLocked);                 // return error on failure
+
+        // while [read_]locked, process any outstanding Modification
+        //TODO: ensure that modification are actually processed for MCFLemonSolver.
+        //process_outstanding_Modification();
+
+        if (!f_dmx_file.empty())
+        { // if so required
+                // output the current instance (after the changes) to a DMX file
+                std::ofstream ProbFile(f_dmx_file, ios_base::out | ios_base::trunc);
+                if (!ProbFile.is_open())
+                throw(std::logic_error("cannot open DMX file " + f_dmx_file));
+
+                //WriteMCF(ProbFile);
+                writeDimacsMat(ProbFile, *dgp);
+                ProbFile.close();
+        }
+
+        if (!owned)               // if the [MCF]Block was actually read_locked
+                f_Block->read_unlock(); // read_unlock it
+
+        auto start = chrono::system_clock::now();
+        
+        if(f_method != NULL){
+        this->status = f_algo->run(f_method);
+        }else{
+                //Build f_method and execute run() method
+        }
+        
+        auto end = chrono::system_clock::now();
+
+        chrono::duration< double > elapsed = end - start;
+        ticks = elapsed.count();
+        int status = this->get_status();
+        if(LemonStatus_2_MCFstatus[status] == kErrorStatus){
+                return Solver::kError;
+        }
+
+        
+        
+        unlock(); // release self-lock
+
+        // now give out the result: note that the vector MCFstatus_2_sol_type[]
+        // starts from 0 whereas the first value of MCFStatus is -1 (= kUnSolved),
+        // hence the returned status has to be shifted by + 1
+        //TODO: change MCFC function to Algo function.
+        //Da rivedere, this->get_status() potrebbe non essere corretta.
+        return (MCFstatus_2_sol_type[status]);
+        }
+
 
 /*--------------------------------------------------------------------------*/
 /* Managing parameters for MCFSimplex---------------------------------------*/
@@ -175,7 +395,7 @@ const std::vector< int > MCFSolver< MCFSimplex >::Solver_2_MCFClass_dbl = {
 template<>
 Solver::idx_type MCFSolver< MCFSimplex >::get_num_int_par( void ) const
 {
- return( CDASolver::get_num_int_par() + 5 );
+ //return( CDASolver::get_num_int_par() + 5 );
  }
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -187,13 +407,13 @@ Solver::idx_type MCFSolver< MCFSimplex >::get_num_dbl_par( void ) const { }
 
 template<>
 int MCFSolver< MCFSimplex >::get_dflt_int_par( idx_type par ) const
-{
+{/*
  static const std::array< int , 5 > my_dflt_int_par = { MCFClass::kYes ,
 		  MCFClass::kYes , MCFSimplex::kCandidateListPivot , 0 , 0 };
 
  return( par >= intLastParCDAS ? my_dflt_int_par[ par - intLastParCDAS ]
 	                       : CDASolver::get_dflt_int_par( par ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -206,7 +426,7 @@ double MCFSolver< MCFSimplex >::get_dflt_dbl_par( const idx_type par )
 template<>
 Solver::idx_type MCFSolver< MCFSimplex >::int_par_str2idx(
 					     const std::string & name ) const
-{
+{/*
  if( name == "kReopt" )
   return( intLastParCDAS );
  if( name == "kAlgPrimal" )
@@ -219,7 +439,7 @@ Solver::idx_type MCFSolver< MCFSimplex >::int_par_str2idx(
   return( intLastParCDAS + 4 );
 
  return( CDASolver::dbl_par_str2idx( name ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -231,14 +451,14 @@ Solver::idx_type MCFSolver< MCFSimplex >::dbl_par_str2idx(
 
 template<>
 const std::string & MCFSolver< MCFSimplex >::int_par_idx2str( idx_type idx )
- const {
+ const {/*
  static const std::array< std::string , 5 > my_int_pars_str = {
   "kReopt" , "kAlgPrimal" , "kAlgPricing" , "kNumCandList" , "kHotListSize"
   };
 
  return( idx >= intLastParCDAS ? my_int_pars_str[ idx - intLastParCDAS ]
 	                       : CDASolver::int_par_idx2str( idx ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -298,7 +518,7 @@ const std::vector< int > MCFSolver< RelaxIV >::Solver_2_MCFClass_dbl = {
 template<>
 Solver::idx_type MCFSolver< RelaxIV >::get_num_int_par( void ) const
 {
- return( CDASolver::get_num_int_par() + 2 );
+ //return( CDASolver::get_num_int_par() + 2 );
  }
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -310,13 +530,13 @@ Solver::idx_type MCFSolver< RelaxIV >::get_num_dbl_par( void ) const { }
 
 template<>
 int MCFSolver< RelaxIV >::get_dflt_int_par( const idx_type par ) const
-{
+{/*
  static const std::array< int , 2 > my_dflt_int_par = { MCFClass::kYes ,
 						        MCFClass::kYes };
 
  return( par >= intLastParCDAS ? my_dflt_int_par[ par - intLastParCDAS ]
 	                       : CDASolver::get_dflt_int_par( par ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -328,14 +548,14 @@ double MCFSolver< RelaxIV >::get_dflt_dbl_par( idx_type par ) const { }
 template<>
 Solver::idx_type MCFSolver< RelaxIV >::int_par_str2idx(
 					     const std::string & name ) const
-{
+{/*
  if( name == "kReopt" )
   return( intLastParCDAS );
  if( name == "kAuction" )
   return( intLastParCDAS + 1 );
 
  return( CDASolver::dbl_par_str2idx( name ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -348,12 +568,12 @@ Solver::idx_type MCFSolver< RelaxIV >::dbl_par_str2idx(
 template<>
 const std::string & MCFSolver< RelaxIV >::int_par_idx2str( idx_type idx )
  const {
- static const std::array< std::string , 2 > my_int_pars_str = { "kReopt" ,
+ /*static const std::array< std::string , 2 > my_int_pars_str = { "kReopt" ,
 								"kAuction" };
 
  return( idx >= intLastParCDAS ? my_int_pars_str[ idx - intLastParCDAS ]
 	                       : CDASolver::int_par_idx2str( idx ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -406,7 +626,7 @@ const std::vector< int > MCFSolver< MCFCplex >::Solver_2_MCFClass_dbl =
 
 template<>
 Solver::idx_type MCFSolver< MCFCplex >::get_num_int_par( void ) const {
- return( CDASolver::get_num_int_par() + 2 );
+ //return( CDASolver::get_num_int_par() + 2 );
  }
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -418,12 +638,12 @@ Solver::idx_type MCFSolver< MCFCplex >::get_num_dbl_par( void ) const { }
 
 template<>
 int MCFSolver< MCFCplex >::get_dflt_int_par( idx_type par ) const {
- static const std::array< int , 2 > my_dflt_int_par = { MCFClass::kYes ,
+ /*static const std::array< int , 2 > my_dflt_int_par = { MCFClass::kYes ,
                                                         MCFClass::kYes };
  return( par >= intLastParCDAS ?
          my_dflt_int_par[ par - intLastParCDAS ] :
          CDASolver::get_dflt_int_par( par ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -435,13 +655,13 @@ int MCFSolver< MCFCplex >::get_dflt_int_par( idx_type par ) const {
 template<>
 Solver::idx_type MCFSolver< MCFCplex >::int_par_str2idx(
 					   const std::string & name ) const {
- if( name == "kReopt" )
+ /*if( name == "kReopt" )
   return( intLastParCDAS );
  if( name == "kQPMethod" )
   return( kQPMethod + 1 );
 
  return( CDASolver::dbl_par_str2idx( name ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -454,12 +674,12 @@ Solver::idx_type MCFSolver< MCFCplex >::dbl_par_str2idx(
 template<>
 const std::string & MCFSolver< MCFCplex >::int_par_idx2str( idx_type idx )
  const {
- static const std::array< std::string , 2 > my_int_pars_str = { "kReopt" ,
+ /*static const std::array< std::string , 2 > my_int_pars_str = { "kReopt" ,
                                                                 "kQPMethod" };
  return( idx >= intLastParCDAS ?
          my_int_pars_str[ idx - intLastParCDAS ] :
          CDASolver::int_par_idx2str( idx ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -507,8 +727,8 @@ const std::vector< int > MCFSolver< SPTree >::Solver_2_MCFClass_dbl = {
 
 template<>
 Solver::idx_type MCFSolver< SPTree >::get_num_int_par( void ) const {
- return( CDASolver::get_num_int_par() + 1 );
- }
+ /*return( CDASolver::get_num_int_par() + 1 );
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -519,12 +739,12 @@ Solver::idx_type MCFSolver< SPTree >::get_num_dbl_par( void ) const { }
 
 template<>
 int MCFSolver< SPTree >::get_dflt_int_par( idx_type par ) const {
- static const std::array< int , 1 > my_dflt_int_par = { MCFClass::kYes };
+ /*static const std::array< int , 1 > my_dflt_int_par = { MCFClass::kYes };
 
  return( par >= intLastParCDAS ?
          my_dflt_int_par[ par - intLastParCDAS ] :
          CDASolver::get_dflt_int_par( par ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -536,11 +756,11 @@ double MCFSolver< SPTree >::get_dflt_dbl_par( idx_type par ) const { }
 template<>
 Solver::idx_type MCFSolver< SPTree >::int_par_str2idx(
 					  const std::string & name ) const {
- if( name == "kReopt" )
+ /*if( name == "kReopt" )
   return( intLastParCDAS );
 
  return( CDASolver::dbl_par_str2idx( name ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -552,13 +772,13 @@ Solver::idx_type MCFSolver< SPTree >::dbl_par_str2idx(
 
 template<>
 const std::string & MCFSolver< SPTree >::int_par_idx2str( idx_type idx )
- const {
+ const {/*
  static const std::array< std::string , 1 > my_int_pars_str = { "kReopt" };
 
  return( idx >= intLastParCDAS ?
          my_int_pars_str[ idx - intLastParCDAS ] :
          CDASolver::int_par_idx2str( idx ) );
- }
+ */}
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -572,3 +792,4 @@ const std::string & MCFSolver< SPTree >::int_par_idx2str( idx_type idx )
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File MCFSolver.cpp ---------------------------*/
 /*--------------------------------------------------------------------------*/
+ 
