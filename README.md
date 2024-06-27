@@ -1,6 +1,4 @@
 # LEMONSolver
-
-<<<<<<< HEAD
 This project implements `MCFLEMONSolver`, a SMS++ :Solver
 for [MCFBlock](https://gitlab.com/smspp/mcfblock) based
 on interfacing solvers from the
