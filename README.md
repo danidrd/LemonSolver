@@ -1,5 +1,6 @@
 # LEMONSolver
 
+<<<<<<< HEAD
 This project implements `MCFLEMONSolver`, a SMS++ :Solver
 for [MCFBlock](https://gitlab.com/smspp/mcfblock) based
 on interfacing solvers from the
@@ -39,6 +40,24 @@ Currently, LEMON provides solvers that are compatible with integer costs and cap
 These instructions will let you build MCFBlock and MCFLemonSolver on your system.
 
 
+=======
+This project implements `LEMONSolver`, a SMS++ :Solver
+for [MCFBlock](https://gitlab.com/smspp/mcfblock) based
+on interfacing solvers from the
+[LEMON PROJECT](https://lemon.cs.elte.hu/trac/lemon).
+In fact, `LEMONSolver` is not a single solver but no less
+than 32 classes obtained instantiating 4 different "base"
+solvers ...
+
+## TODO: COMPLETE DESCRIPTION
+
+
+## Getting started
+
+These instructions will let you build MCFBlock and MCFSolver on your system.
+
+
+>>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 ### Requirements
 
 - The [SMS++ core library](https://gitlab.com/smspp/smspp) and
@@ -48,14 +67,24 @@ These instructions will let you build MCFBlock and MCFLemonSolver on your system
   requirements (but no actual `MCFSolver` are needed, since
   `LEMONSolver` provides its own)
 
+<<<<<<< HEAD
 - The [LEMON PROJECT](https://lemon.cs.elte.hu/trac/lemon), currently contained
   in this repository, do not download the LEMON Project from their site if there
   aren't new realeses, for the reasons discussed above, but use what is provided
   as "functional" in this repository.
+=======
+- The [LEMON PROJECT](https://lemon.cs.elte.hu/trac/lemon)
+>>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
 
 ## TODO: UPDATE
 
+<<<<<<< HEAD
+=======
+### INSTALL
+Run install.sh script for install the umbrella project
+
+>>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 ### Build and install with CMake
 
 First you have to separately build LEMON with
