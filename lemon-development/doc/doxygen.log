@@ -1,0 +1,17 @@
+warning: failed to open layout file '@abs_top_srcdir@/doc/DoxygenLayout.xml' for reading!
+warning: source '@abs_top_srcdir@/demo' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/LICENSE' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/doc' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/doc/images' is not a readable file or directory... skipping.
+warning: source '@abs_top_builddir@/doc/gen-images' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/doc' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/lemon' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/lemon/bits' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/lemon/concepts' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/demo' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/contrib' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/tools' is not a readable file or directory... skipping.
+warning: source '@abs_top_srcdir@/test/test_tools.h' is not a readable file or directory... skipping.
+warning: source '@abs_top_builddir@/doc/mainpage.dox' is not a readable file or directory... skipping.
+error: Tag file '@abs_top_builddir@/doc/libstdc++.tag' does not exist or is not a file. Skipping it...
+error: Problems running dot: exit code=127, command='dot', arguments='"/home/daniele/LemonSolver/LemonSolver/lemon-development/doc/html/graph_legend.dot" -Tpng -o "/home/daniele/LemonSolver/LemonSolver/lemon-development/doc/html/graph_legend.png"'
