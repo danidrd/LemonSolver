@@ -26,13 +26,8 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __MCFLemonSolver
-<<<<<<< HEAD
 #define __MCFLemonSolver
 /* self-identification: #endif at the end of the file */
-=======
- #define __MCFLemonSolver
-                      /* self-identification: #endif at the end of the file */
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -61,20 +56,16 @@
 
 #include <lemon/concepts/digraph.h>
 
-<<<<<<< HEAD
 #include <type_traits>
 
 #include <lemon/lgf_writer.h>
 
 #include <utility>
-=======
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- NAMESPACE & USING -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /// namespace for the Structured Modeling System++ (SMS++)
-<<<<<<< HEAD
 namespace SMSpp_di_unipi_it {
 using namespace lemon;
 using namespace lemon::concepts;
@@ -244,13 +235,6 @@ class MCFListDigraph : public lemon::ListDigraph {
         _arcs[n].prev_in = -2;
     }
 };
-=======
-namespace SMSpp_di_unipi_it
-{
- using namespace lemon;
- using namespace lemon::concepts;
- using namespace std;
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- TEMPLATE TYPES --------------------------------*/
@@ -260,24 +244,14 @@ namespace SMSpp_di_unipi_it
  * Algorithms in the LEMON projects are template over at least three types:
  *
  * - GR, which is the type of graph
-<<<<<<< HEAD
  *
  *   The possibilities are:
  *
-=======
- *  
- *   The possibilities are:
- * 
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
  *   - SmartDigraph is a simple and fast directed graph implementation
  *     It is quite memory efficient but at the price that it does not support
  *     node and arc deletion.
  *     It will be hard find the best way for modification.
-<<<<<<< HEAD
  *
-=======
- * 
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
  *   - ListDigraph, a versatile and fast directed graph implementation based
  *     on linked lists that are stored in std::vector structures.
  *     This class provides only linear time counting for nodes and arcs.
@@ -301,20 +275,12 @@ namespace SMSpp_di_unipi_it
  *
  * Thus, the concept LEMONGraph is defined that only allows all possible
  * types of LEMON graphs, i.e.,
-<<<<<<< HEAD
  *
-=======
- * 
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
  *   - SmartDigraph is a simple and fast directed graph implementation
  *     It is quite memory efficient but at the price that it does not support
  *     node and arc deletion.
  *     It will be hard find the best way for modification.
-<<<<<<< HEAD
  *
-=======
- * 
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
  *   - ListDigraph, a versatile and fast directed graph implementation based
  *     on linked lists that are stored in std::vector structures.
  *     This class provides only linear time counting for nodes and arcs.
@@ -344,7 +310,6 @@ class SMSppCostScaling : public CostScaling<GR, V, C, CostScalingDefaultTraits<G
   public:
     SMSppCostScaling(const GR &dgp) : CostScaling<GR, V, C, CostScalingDefaultTraits<GR, V, C>>(dgp) {}
 
-<<<<<<< HEAD
     ~SMSppCostScaling() = default;
 };
 
@@ -353,20 +318,8 @@ class SMSppCostScaling : public CostScaling<GR, V, C, CostScalingDefaultTraits<G
 /*--------------------------------------------------------------------------*/
 /** @defgroup MCFLemonSolver_CLASSES Classes in MCFLemonSolver.h
  *  @{ */
-=======
- /// CostScaling algorithm using the default trait
- template < LEMONGraph GR , typename V , typename C>
- class SMSppCostScaling : public
-  CostScaling< GR , V , C , CostScalingDefaultTraits< GR , V , C > >
-  {};
 
-
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
-
-/** @} ---------------------------------------------------------------------*/
-/*------------------------------- CLASSES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
-<<<<<<< HEAD
 /*------------------------ CLASS MCFLemonSolver ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /*--------------------------- GENERAL NOTES --------------------------------*/
@@ -670,192 +623,12 @@ class MCFLemonSolver : public CDASolver {
     /*--------------------------------------------------------------------------*/
     /*--------------------- PROTECTED PART OF THE CLASS ------------------------*/
     /*--------------------------------------------------------------------------*/
-=======
-/** @defgroup MCFLemonSolver_CLASSES Classes in MCFLemonSolver.h
- *  @{ */
-
-
-
-  template< typename Algo >
-  struct Fields {};
-   
-  enum LEMON_sol_type
-  {
-  UNSOLVED, //= NULL, ///< the problem has not been solved yet
-  OPTIMAL,           ///< the problem has been solved
-  KSTOPTIME, //= NULL,     ///< the problem has been stopped because of time limit
-  INFEASIBLE,   ///< the problem is provably infeasible
-  UNBOUNDED,    ///< the problem is provably unbounded
-  KERROR //= NULL         ///< the problem has been stopped because of unrecoverable error
-  };// end( sol_type )
-
-/*--------------------------------------------------------------------------*/
-/*--------------------------------- BASE CLASS -----------------------------*/
-/*--------------------------------------------------------------------------*/
-/** This class contains the fields and functions that every specialized version
- * of MCFLemonSolver<> has in common. For now this class contains:
- * 
- * set_Block() function
- * f_algo private field of type pointer to Algo<GR, V, C>
- * dgp private field of type pointer to GR
- * 
-*/
-template< template< typename , typename , typename > typename Algo ,
-          typename GR , typename V , typename C >
-  requires LEMONGraph< GR >
-class MCFLemonSolverBase: virtual public CDASolver {
-
-  public:
-
-  enum str_par_type_LEMON_NS {
-  strDMXFile = strLastParCDAS ,  ///< DMX filename to output the instance
-  strLastParLEMON    ///< first allowed parameter value for derived classes
-                   /**< convenience value for easily allow derived classes
-                    * to further extend the set of types of return codes */
-  };
-
-  /// constructor: Initializes f_algo
-  /** Void constructor. Initialize f_algo to nullptr
-  */
-
-  MCFLemonSolverBase(): CDASolver() {
-    f_algo = NULL;
-  }
-
-  /// destructor: delete heap memory
-  /**
-   * Void destructor. delete f_algo and dgp fields from memory
-   * Actually we have trouble with deleting dgp.
-  */
-  ~MCFLemonSolverBase( void ) {
-    delete f_algo;
-    delete dgp;
-  
-  }
-
-  ///set_block function. Initialize dgp and f_algo
-  /**
-   * Prepare the block to be solved, initialize structure useful for LEMON algorithm
-  */
-
-  void set_Block(Block *block) override
-    {
-     
-      
-      if (block == f_Block) // actually doing nothing
-        return;             // cowardly and silently return
-      
-      delete f_algo;
-      f_algo=NULL;
-
-      Solver::set_Block(block); // attach to the new Block
-
-      if (block)
-      { // this is not just resetting everything
-        auto MCFB = dynamic_cast<MCFBlock *>(block);
-        if (!MCFB)
-          throw(std::invalid_argument(
-              "MCFSolver:set_Block: block must be a MCFBlock"));
-
-        bool owned = MCFB->is_owned_by(f_id);
-        if ((!owned) && (!MCFB->read_lock()))
-          throw(std::logic_error("cannot acquire read_lock on MCFBlock"));
-
-        // create and clear new Graph (ListDigraph or SmartDigraph)
-        dgp = new GR;
-        dgp->clear();
-
-        //Actually reserve get_MaxNNodes() node space in dgp
-        dgp->reserveNode( MCFB->get_MaxNNodes() );
-        MCFBlock::Index n = MCFB->get_NNodes();
-
-        for( MCFBlock::Index i = 0; i < n; ++i)
-          dgp->addNode();
-        
-        //Reserve gete_MaxNArcs() arcs space
-        dgp->reserveArc( MCFB->get_MaxNArcs() );
-        MCFBlock::Index m = MCFB->get_NArcs();
-
-        //Get starting node subset and ending node subset
-        MCFBlock::c_Subset & sn = MCFB->get_SN();
-        MCFBlock::c_Subset & en = MCFB->get_EN();
-
-        //Add arc in dgp
-        /// sn[i] - 1 and en[i] - 1 are used because sn,en nodes start from 1
-        for( MCFBlock::Index i = 0; i < m; ++i){
-          dgp->addArc( dgp->nodeFromId( sn[i] - 1) , dgp->nodeFromId( en[i] - 1 ) );
-        }
-
-
-        //New instance of Lemon Algorithm
-        f_algo = new Algo< GR , V, C >(*dgp);
-
-        //Defining names for types for readability
-        using MCFArcMapV = typename GR::template ArcMap< V >;
-        using MCFNodeMapV = typename GR::template NodeMap< V >;
-
-
-        //Now we are going to fill up ArcMap
-        //This is the case of upperMap 
-        if(!MCFB->get_U().empty())
-        {
-          MCFArcMapV um(*dgp);
-          MCFBlock::c_Vec_FNumber & u = MCFB->get_U();
-          for( MCFBlock::Index i = 0; i < m; ++i){
-          um.set( dgp->arcFromId(i), u[i]);
-          }
-          f_algo->upperMap(um);
-        }
-
-        //This is the case of CostMap
-        if(!MCFB->get_C().empty())
-        {
-          MCFArcMapV cm(*dgp);
-          MCFBlock::c_Vec_FNumber & c = MCFB->get_C();
-          for( MCFBlock::Index i = 0; i < m; ++i){
-            cm.set( dgp->arcFromId(i), c[i]);
-          }
-          f_algo->costMap(cm);
-
-        }
-
-        //This is the case of supplyMap
-        if(!MCFB->get_B().empty())
-        {
-
-          MCFNodeMapV bm(*dgp);
-          MCFBlock::c_Vec_FNumber & b = MCFB->get_B();
-          for( MCFBlock::Index i = 0; i < n; i++){
-            bm.set( dgp->nodeFromId(i), -b[i]);
-          }
-          f_algo->supplyMap(bm);
-
-        }
-
-        
-        // TODO: PreProcess() changes the internal data of the MCFSolver using
-        //       information about how the data of the MCF is *now*. If the data
-        //       changes, some of the deductions (say, reducing the capacity but
-        //       of some arcs) may no longer be correct and they should be undone,
-        //       there isn't any proper way to handle this. Thus, PreProcess() has
-        //       to be disabled for now; maybe later on someone will take care to
-        //       make this work (or maybe not).
-        // MCFC::PreProcess();
-
-        // once done, read_unlock the MCFBlock (if it was read-lock()-ed)
-        if (!owned)
-          MCFB->read_unlock();
-
-        
-      }
-      
-    } // end( set_Block )
-
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
   protected:
+    /*--------------------------------------------------------------------------*/
+    /*-------------------------- PROTECTED METHODS -----------------------------*/
+    /*--------------------------------------------------------------------------*/
 
-<<<<<<< HEAD
     void guts_of_constructor(void) { f_algo = nullptr; }
 
     /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -870,14 +643,9 @@ class MCFLemonSolverBase: virtual public CDASolver {
     /*--------------------------------------------------------------------------*/
 
     virtual void guts_of_compute(void) = 0;
-=======
-    Algo<GR, V, C> * f_algo; ///f_algo represents the algorithm used by Lemon for solving the MCFBlock
-    GR *dgp; ///dgp represents the directed graph implemented by two classes by Lemon (ListDigraph and SmartDigraph)
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
-}; // end( MCFLemonSolverBase )
+    void guts_of_poM(c_p_Mod mod);
 
-<<<<<<< HEAD
     void guts_of_set_Block(MCFBlock *MCFB);
 
     /*--------------------------------------------------------------------------*/
@@ -1220,96 +988,6 @@ class MCFLemonSolverNetworkSimplex : public MCFLemonSolver<NetworkSimplex, GR, V
 template <typename GR, typename V, typename C>
 class MCFLemonSolverCycleCanceling : public MCFLemonSolver<CycleCanceling, GR, V, C> {
     /*--------------------------------------------------------------------------*/
-=======
-/*--------------------------------------------------------------------------*/
-/*------------------------ CLASS MCFLemonSolver ----------------------------*/
-/*--------------------------------------------------------------------------*/
-/*--------------------------- GENERAL NOTES --------------------------------*/
-/*--------------------------------------------------------------------------*/
-/// CDASolver for MCFBlock based on the LEMON project
-/** The MCFLemonSolver implements Solver interface for MCFBlock that represent
- * (Linear) Min-Cost Flow (MCF) problems, using algorithms of LEMON library.
- * Because MCF is a Linear Program it has a(n exact) dual, and therefore
- * MCFLemonSolver implements the CDASolver interface for also giving out dual
- * information.
- *
- * The MCFLemonSolver is template over four different types:
- *
- * - GR, which is the type of graph:
- * 
- *   The possibilities are:
- *   - SmartDigraph is a simple and fast directed graph implementation
- *     It is quite memory efficient but at the price that it does not support
- *     node and arc deletion.
- *     It will be hard find the best way for modification.
- * 
- *   - ListDigraph, a versatile and fast directed graph implementation based
- *     on linked lists that are stored in std::vector structures.
- *     This class provides only linear time counting for nodes and arcs.
- *     It support node and arc deletion, useful for modification.
- *
- * - V, which is the type of flows / deficits; typically, double can be used
- *   for maximum compatibility, but int (or even smaller) would yeld better
- *   performances;
- *
- * - C, which is the type of ar costs; typically, double can be used for
- *   maximum compatibility, but int (or even smaller) would yeld better
- *   performances;
- *
- * - Algo, which is the specific algorithm (itself, template over GR, V, and
- *   C) implemented in the LEMON class:
- *   The possibilities are:
- * 
- *   - NetworkSimplex implements the primal Network Simplex algorithm for finding
- *     a minimum cost flow. This algorithm is a highly efficient specialized version
- *     of the linear programming simplex method directly for the minimum cost flow
- *     problem.
- *     
- *   - CycleCanceling implements three different cycle-canceling algorithms for finding 
- *     a minimum cost flow. The most efficent one is the Cancel-and-tighten algorithm,
- *     thus it is the default method. It runs in strongly polynomial time, but in practice, 
- *     it is typically orders of magnitude slower than the scaling algorithms and NetworkSimplex.
- * 
- *   - CostScaling implements a cost scaling algorithm that performs push/augment and
- *     relabel operations for finding a minimum cost flow. It is a highly efficient primal-dual
- *     solution method, which can be viewed as the generalization of the preflow push-relabel
- *     algorithm for the maximum flow problem. It is a polynomial algorithm.
- * 
- *   - CapacityScaling implements the capacity scaling version of the successive shortest path
- *     algorithm for finding a minimum cost flow. It is an efficient dual solution method,
- *     which runs in polynomial time.
- *     In special case it can be more efficient than CostScaling and NetworkSimplex algorithms.
- * 
- *   In general, NetworkSimplex and CostScaling are the fastest implementations available in LEMON
- *   for solving this problem.
- *    
- *   Note that scaling-type algorithms may behave in different ways according
- *   to which combination of V and C is used, and there are different
- *   "traits" for this which are another scaling parameter. However, in order
- *   to make MCFLemonSolver class template over always the same number of
- *   template parameters we fix the use of the default trait, which is why
- *   SMSppCapacityScaling and SMSppCostScaling are defined (as template over
- *   < GR , V , C >) that are meant to be used instead of the original
- *   CapacityScaling and CostScaling. */
-
-template< template< typename , typename , typename > typename Algo ,
-          typename GR , typename V , typename C >
-  requires LEMONGraph< GR >
-class MCFLemonSolver: virtual public CDASolver, Fields< Algo<GR, V, C> > {
-};
-          
-
-  /*--------------------------------------------------------------------------*/
-  /*------------------------- CLASS MCFLemonState ---------------------------*/
-  /*--------------------------------------------------------------------------*/
-  /// class to describe the "internal state" of a MCFLemonSolver
-  /** Derived class from State to describe the "internal state" of a MCFLemonSolver,
-   *  i.e., a MCFClass::MCFState (*). Since MCFClass::MCFState does not allow
-   *  serialization, all that part does not work.  */
-
-  class MCFLemonState : public State
-  {
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
     /*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
     /*--------------------------------------------------------------------------*/
 
@@ -1338,7 +1016,6 @@ class MCFLemonSolver: virtual public CDASolver, Fields< Algo<GR, V, C> > {
     using CCMethod = typename ThisAlgo::Method;
 
   public:
-<<<<<<< HEAD
     /*--------------------------------------------------------------------------*/
     /*---------------------------- PUBLIC TYPES --------------------------------*/
     /*--------------------------------------------------------------------------*/
@@ -2178,8 +1855,6 @@ class MCFLemonState : public State {
      * -------------------------*/
 
   public:
-=======
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
     /*------------- CONSTRUCTING AND DESTRUCTING MCFLemonState ----------------*/
 
     /// constructor, doing everything or nothing.
@@ -2212,11 +1887,7 @@ class MCFLemonState : public State {
     /*--------------------------------------------------------------------------*/
     /// destructor
 
-<<<<<<< HEAD
     // virtual ~MCFLemonState() { delete f_state; }
-=======
-    //virtual ~MCFLemonState() { delete f_state; }
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
     /*---------- METHODS DESCRIBING THE BEHAVIOR OF A MCFSolverState
      * -----------*/
@@ -2245,11 +1916,7 @@ class MCFLemonState : public State {
     /*--------------------------- PROTECTED FIELDS
      * -----------------------------*/
 
-<<<<<<< HEAD
     // MCFClass::MCFStatePtr f_state; ///< the (pointer to) MCFState
-=======
-   // MCFClass::MCFStatePtr f_state; ///< the (pointer to) MCFState
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
     /*---------------------- PRIVATE PART OF THE CLASS
      * -------------------------*/
@@ -2264,7 +1931,6 @@ class MCFLemonState : public State {
 
 }; // end( class( MCFSolverState ) )
 
-<<<<<<< HEAD
 /** @} end( group( MCFSolver_CLASSES ) ) */
 /*--------------------------------------------------------------------------*/
 /*------------------- inline methods implementation ------------------------*/
@@ -2276,278 +1942,6 @@ class MCFLemonState : public State {
 /*--------------------------------------------------------------------------*/
 
 } // namespace SMSpp_di_unipi_it
-=======
-  /** @} end( group( MCFSolver_CLASSES ) ) */
-  /*--------------------------------------------------------------------------*/
-  /*------------------- inline methods implementation ------------------------*/
-  /*--------------------------------------------------------------------------*/
-  //TODO: change MCFC function to Algo function.
-  /*template <class Algo>
-  State *MCFSolver<Algo>::get_State(void) const
-  {
-    return (new MCFSolverState(const_cast<MCFSolver<MCFC> *>(this)));
-  }*/
-
-  /*--------------------------------------------------------------------------*/
-  //TODO: change MCFC function to Algo function.
-  /*template <class Algo>
-  void MCFSolver<Algo>::put_State(const State &state)
-  {
-    // if state is not a const MCFSolverState &, exception will be thrown
-    auto s = dynamic_cast<const MCFSolverState &>(state);
-
-    this->MCFPutState(s.f_state);
-  }*/
-
-  /*--------------------------------------------------------------------------*/
-  //TODO: change MCFC function to Algo function.
-  /*template <class Algo>
-  void MCFSolver<Algo>::put_State(State &&state)
-  {
-    // if state is not a MCFSolverState &&, exception will be thrown
-    auto s = dynamic_cast<MCFSolverState &&>(state);
-
-    this->MCFPutState(s.f_state);
-  }*/
-
-  /*--------------------------------------------------------------------------*/
-  //TODO: change MCFC function to Algo function.
-  /*template <class Algo>
-  void MCFSolver<Algo>::process_outstanding_Modification(void)
-  {
-    // no-frills loop: do them in order, with no attempt at optimizing
-    // note that NBModification have already been dealt with and therefore need
-    // not be considered here
-
-    for (;;)
-    {
-      auto mod = pop();
-      if (!mod)
-        break;
-
-      guts_of_poM(mod.get());
-    }
-  }*/ // end( MCFSolver::process_outstanding_Modification )
-
-  /*--------------------------------------------------------------------------*/
-
-  /*template <class Algo>
-  void MCFSolver<Algo>::guts_of_poM(c_p_Mod mod)
-  {
-    auto MCFB = static_cast<MCFBlock *>(f_Block);
-    */
-    // process Modification - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /* This requires to patiently sift through the possible Modification types
-     * to find what this Modification exactly is, and call the appropriate
-     * method of MCFClass. */
-
-    // GroupModification- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /*if (auto tmod = dynamic_cast<const GroupModification *>(mod))
-    {
-      for (const auto &submod : tmod->sub_Modifications())
-        guts_of_poM(submod.get());
-
-      return;
-    }*/
-
-    // MCFBlockRngdMod- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /* Note: in the following we can assume that C, B and U are nonempty. This
-     * is because they can be empty only if they are so when the object is
-     * loaded. But if a Modification has been issued they are no longer empty (a
-     * Modification changin nothing from the "empty" state is not issued). */
-
-    /*if (auto tmod = dynamic_cast<const MCFBlockRngdMod *>(mod))
-    {
-      auto rng = tmod->rng();
-
-      switch (tmod->type())
-      {
-      case (MCFBlockMod::eChgCost):
-        if (rng.second == rng.first + 1)
-        {
-          if (!MCFB->is_deleted(rng.first))
-            //TODO: change MCFC function to Algo function.
-            MCFC::ChgCost(rng.first, MCFB->get_C(rng.first));
-        }
-        else
-        {
-          if (std::any_of(MCFB->get_C().data() + rng.first,
-                          MCFB->get_C().data() + rng.second,
-                          [](auto ci)
-                          { return (std::isnan(ci)); }))
-          {
-            MCFBlock::Vec_CNumber NCost(MCFB->get_C().data() + rng.first,
-                                        MCFB->get_C().data() + rng.second);
-            for (auto &ci : NCost)
-              if (std::isnan(ci))
-                ci = 0;
-            //TODO: change MCFC function to Algo function.
-            MCFC::ChgCosts(NCost.data(), nullptr, rng.first, rng.second);
-          }
-          else
-            //TODO: change MCFC function to Algo function.
-            MCFC::ChgCosts(MCFB->get_C().data() + rng.first, nullptr,
-                           rng.first, rng.second);
-        }
-        return;
-
-      case (MCFBlockMod::eChgCaps):
-        if (rng.second == rng.first + 1)
-        {
-          if (!MCFB->is_deleted(rng.first))
-            //TODO: change MCFC function to Algo function.
-            MCFC::ChgUCap(rng.first, MCFB->get_U(rng.first));
-        }
-        else
-          //TODO: change MCFC function to Algo function.
-          MCFC::ChgUCaps(MCFB->get_U().data() + rng.first, nullptr,
-                         rng.first, rng.second);
-        return;
-
-      case (MCFBlockMod::eChgDfct):
-        if (rng.second == rng.first + 1)
-          //TODO: change MCFC function to Algo function.
-          MCFC::ChgDfct(rng.first, MCFB->get_B(rng.first));
-        else
-          //TODO: change MCFC function to Algo function.
-          MCFC::ChgDfcts(MCFB->get_B().data() + rng.first, nullptr,
-                         rng.first, rng.second);
-        return;
-      //TODO: change MCFC function to Algo function.
-      case (MCFBlockMod::eOpenArc):
-        for (; rng.first < rng.second; ++rng.first)
-          if ((!MCFB->is_deleted(rng.first)) &&
-              (!MCFC::IsDeletedArc(rng.first)))
-            MCFC::OpenArc(rng.first);
-        return;
-      //TODO: change MCFC function to Algo function.
-      case (MCFBlockMod::eCloseArc):
-        for (; rng.first < rng.second; ++rng.first)
-          if ((!MCFB->is_deleted(rng.first)) &&
-              (!MCFC::IsDeletedArc(rng.first)))
-            MCFC::CloseArc(rng.first);
-        return;
-
-      case (MCFBlockMod::eAddArc):
-      {
-        auto ca = MCFB->get_C(rng.first);
-        //TODO: change MCFC function to Algo function.
-        auto arc = MCFC::AddArc(MCFB->get_SN(rng.first),
-                                MCFB->get_EN(rng.first),
-                                MCFB->get_U(rng.first),
-                                std::isnan(ca) ? 0 : ca);
-        if (arc != rng.first)
-          throw(std::logic_error("name mismatch in AddArc()"));
-        return;
-      }
-
-      case (MCFBlockMod::eRmvArc):
-        //TODO: change MCFC function to Algo function.
-        MCFC::DelArc(rng.second - 1);
-        return;
-
-      default:
-        throw(std::invalid_argument("unknown MCFBlockRngdMod type"));
-      }
-    }
-
-    // MCFBlockSbstMod- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    if (auto tmod = dynamic_cast<const MCFBlockSbstMod *>(mod))
-    {
-      switch (tmod->type())
-      {
-      case (MCFBlockMod::eOpenArc):
-        for (auto arc : tmod->nms())
-          if ((!MCFB->is_deleted(arc)) &&
-              (!MCFC::IsDeletedArc(arc)))
-            //TODO: change MCFC function to Algo function.
-            MCFC::OpenArc(arc);
-        return;
-
-      case (MCFBlockMod::eCloseArc):
-        for (auto arc : tmod->nms())
-          if ((!MCFB->is_deleted(arc)) &&
-              (!MCFC::IsDeletedArc(arc)))
-            //TODO: change MCFC function to Algo function.
-            MCFC::CloseArc(arc);
-        return;
-      }
-
-      // have to InINF-terminate the vector of indices (damn!)
-      // meanwhile, when appropriate remove the indices of deleted
-      // arcs for which the operations make no sense;
-      ;
-      switch (tmod->type())
-      {
-      case (MCFBlockMod::eChgCost):
-      {
-        MCFBlock::Subset nmsI;
-        nmsI.reserve(tmod->nms().size() + 1);
-        MCFBlock::Vec_CNumber NCost;
-        NCost.reserve(tmod->nms().size());
-        auto &C = MCFB->get_C();
-        for (auto i : tmod->nms())
-          if (auto ci = C[i]; !std::isnan(ci))
-          {
-            NCost.push_back(ci);
-            nmsI.push_back(i);
-          }
-        nmsI.push_back(Inf<MCFBlock::Index>());
-        //TODO: change MCFC function to Algo function.
-        MCFC::ChgCosts(NCost.data(), nmsI.data());
-        return;
-      }
-
-      case (MCFBlockMod::eChgCaps):
-      {
-        MCFBlock::Subset nmsI;
-        nmsI.reserve(tmod->nms().size() + 1);
-        MCFBlock::Vec_FNumber NCap;
-        NCap.reserve(tmod->nms().size());
-        auto &C = MCFB->get_C();
-        auto &U = MCFB->get_U();
-        for (auto i : tmod->nms())
-          if (!std::isnan(C[i]))
-          {
-            NCap.push_back(U[i]);
-            nmsI.push_back(i);
-          }
-        nmsI.push_back(Inf<MCFBlock::Index>());
-        //TODO: change MCFC function to Algo function.
-        MCFC::ChgUCaps(NCap.data(), nmsI.data());
-        return;
-      }
-
-      case (MCFBlockMod::eChgDfct):
-      {
-        MCFBlock::Vec_FNumber NDfct(tmod->nms().size());
-        MCFBlock::Subset nmsI(tmod->nms().size() + 1);
-        *copy(tmod->nms().begin(), tmod->nms().end(), nmsI.begin()) =
-            Inf<MCFBlock::Index>();
-        auto B = MCFB->get_B();
-        for (MCFBlock::Index i = 0; i < NDfct.size(); i++)
-          NDfct[i] = B[nmsI[i]];
-        //TODO: change MCFC function to Algo function.
-        MCFC::ChgDfcts(NDfct.data(), nmsI.data());
-        return;
-      }
-
-      default:
-        throw(std::invalid_argument("unknown MCFBlockSbstMod type"));
-      }
-    }
-
-    // any remaining Modification is plainly ignored, since it must be an
-    // "abstract" Modification, which this Solver does not need to look at
-
-  }*/ // end( guts_of_poM )
-
-  /*--------------------------------------------------------------------------*/
-  /*--------------------------------------------------------------------------*/
-
-} // end( namespace SMSpp_di_unipi_it )
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -2558,4 +1952,3 @@ class MCFLemonState : public State {
 /*------------------------- End File MCFLemonSolver.h
  * ---------------------------*/
 /*--------------------------------------------------------------------------*/
-
