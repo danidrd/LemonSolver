@@ -35,21 +35,6 @@ Currently, LEMON provides solvers that are compatible with integer costs and cap
 
 ## Getting started
 
-These instructions will let you build MCFBlock and MCFLemonSolver on your system.
-
-
-This project implements `LEMONSolver`, a SMS++ :Solver
-for [MCFBlock](https://gitlab.com/smspp/mcfblock) based
-on interfacing solvers from the
-[LEMON PROJECT](https://lemon.cs.elte.hu/trac/lemon).
-In fact, `LEMONSolver` is not a single solver but no less
-than 32 classes obtained instantiating 4 different "base"
-solvers ...
-
-
-
-## Getting started
-
 These instructions will let you build MCFBlock and MCFSolver on your system.
 
 ### Requirements
