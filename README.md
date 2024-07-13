@@ -52,8 +52,6 @@ solvers ...
 
 These instructions will let you build MCFBlock and MCFSolver on your system.
 
-
->>>>>>> 3587a0f95544d63e767d768c535e345b48386907
 ### Requirements
 
 - The [SMS++ core library](https://gitlab.com/smspp/smspp) and
